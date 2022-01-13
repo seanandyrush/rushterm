@@ -1,6 +1,6 @@
 [package]
 name = "rushterm"
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 description = "Create nested menus on the terminal, navigate with hotkeys. Data-driven. No function/macro complexity."
 license = "MIT OR Apache-2.0"
