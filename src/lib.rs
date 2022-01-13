@@ -69,7 +69,6 @@ pub enum Item<'a> {
     Action(Action<'a>),
 }
 /// Starting point for creating a menu instance.
-#[derive(Clone)]
 pub struct Menu<'a> {
     pub name: &'a str,
     pub exp: Option<&'a str>,
