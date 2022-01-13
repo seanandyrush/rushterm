@@ -1,5 +1,5 @@
 //! # Rushterm
-//! Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity..
+//! Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity
 //! # Example
 //! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll chain `.print()` and `.run()` methods on the instance to execute our menu:
 //! ```
@@ -69,7 +69,6 @@ pub enum Item<'a> {
     Action(Action<'a>),
 }
 /// Starting point for creating a menu instance.
-#[derive(Clone)]
 pub struct Menu<'a> {
     pub name: &'a str,
     pub exp: Option<&'a str>,
