@@ -178,7 +178,7 @@ impl<'a> Menu<'a> {
     }
     fn print_bottom(&self) {
         println!();
-        println!("Press a index number or a hotkey to select:")
+        println!("Press an index number or a hotkey to select:")
     }
     fn poll_read(&self) -> KeyCode {
         if let Ok(true) = poll(Duration::MAX) {
