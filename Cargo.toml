@@ -1,9 +1,12 @@
 [package]
 name = "rushterm"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 description = "Create nested menus on the terminal, navigate with hotkeys. Data-driven. No function/macro complexity."
 license = "MIT OR Apache-2.0"
+documentation = "https://docs.rs/rushterm/0.1.2/rushterm/"
+homepage = "https://github.com/seanandyrush/rushterm"
+repository = "https://github.com/seanandyrush/rushterm"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
