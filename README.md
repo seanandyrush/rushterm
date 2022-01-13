@@ -55,4 +55,4 @@ fn main() {
     dbg!(&selection);
 }
 ```
-If selection is successful, `run()` method will return us a `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
+If selection is successful, `run()` method will return us a `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the running with an `Err()` variant.

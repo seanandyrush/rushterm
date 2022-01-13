@@ -57,7 +57,10 @@
 //! ```
 //! If selection is successful, `run()` method will return us a `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
 
-use crossterm::event::{poll, read, Event, KeyCode, KeyEvent};
+use crossterm::{
+    event::{poll, read, Event, KeyCode, KeyEvent},
+    style::Stylize,
+};
 use std::time::Duration;
 /// Anything that can be listed in a menu.
 #[derive(Clone)]
@@ -132,11 +135,11 @@ impl<'a> Menu<'a> {
     fn print_top(&self, path: &Vec<String>) {
         print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         for dir in path {
-            print!("{}/", dir);
+            print!("{}{}", dir, "/".cyan());
         }
         println!();
-        if let Some(exp) = &self.exp {
-            println!("{}", exp);
+        if let Some(exp) = self.exp {
+            println!("{}", exp.dark_grey());
         }
         println!();
     }
@@ -144,41 +147,72 @@ impl<'a> Menu<'a> {
         for (i, item) in self.items.iter().enumerate() {
             match item {
                 Item::SubMenu(submenu) => {
-                    print!("{}.", i);
-                    match &submenu.hotkey {
-                        Some(hotkey) => print!("({})", hotkey.to_uppercase()),
+                    print!("{}{}", i.to_string().yellow(), ".".dark_grey());
+                    match submenu.hotkey {
+                        Some(hotkey) => print!(
+                            "{}{}{}",
+                            "(".dark_grey(),
+                            hotkey.to_string().to_uppercase().yellow(),
+                            ")".dark_grey()
+                        ),
                         None => print!("   "),
                     }
-                    print!(" +{}", &submenu.name);
-                    if let Some(exp) = &submenu.exp {
-                        print!(": \"{}\"", exp);
+                    print!(" {}{}", "+".cyan(), submenu.name);
+                    if let Some(exp) = submenu.exp {
+                        print!(" {}", exp.dark_grey());
                     }
                     println!();
                 }
                 Item::Action(action) => {
-                    print!("{}.", i);
-                    match &action.hotkey {
-                        Some(hotkey) => print!("({})", hotkey.to_uppercase()),
+                    print!("{}{}", i.to_string().yellow(), ".".dark_grey());
+                    match action.hotkey {
+                        Some(hotkey) => print!(
+                            "{}{}{}",
+                            "(".dark_grey(),
+                            hotkey.to_string().to_uppercase().yellow(),
+                            ")".dark_grey()
+                        ),
                         None => print!("   "),
                     }
-                    print!("  {}", &action.name);
-                    if let Some(exp) = &action.exp {
-                        print!(": \"{}\"", exp);
+                    print!("  {}", action.name);
+                    if let Some(exp) = action.exp {
+                        print!(" {}", exp.dark_grey());
                     }
                     println!();
                 }
             }
         }
         if is_sub {
-            println!("(Bksp) Back");
-            println!("(Esc)  Exit");
+            println!(
+                "{}{}{}{}",
+                "(".dark_grey(),
+                "Bksp".yellow(),
+                ")".dark_grey(),
+                " Back".magenta()
+            );
+            println!(
+                "{}{}{}{}",
+                "(".dark_grey(),
+                "Esc".yellow(),
+                ")".dark_grey(),
+                "  Exit".red()
+            );
         } else {
-            println!("(Esc)  Exit");
+            println!(
+                "{}{}{}{}",
+                "(".dark_grey(),
+                "Esc".yellow(),
+                ")".dark_grey(),
+                "  Exit".red()
+            );
         }
     }
     fn print_bottom(&self) {
         println!();
-        println!("Press an index number or a hotkey to select:")
+        println!(
+            "{}",
+            "Press an index number or a hotkey to select:".dark_grey()
+        )
     }
     fn poll_read(&self) -> KeyCode {
         if let Ok(true) = poll(Duration::MAX) {
