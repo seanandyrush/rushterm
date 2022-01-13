@@ -1,10 +1,10 @@
 [package]
 name = "rushterm"
-version = "0.1.5"
+version = "0.2.0"
 edition = "2021"
 description = "Create nested menus on the terminal, navigate with hotkeys. Data-driven. No function/macro complexity."
 license = "MIT OR Apache-2.0"
-documentation = "https://docs.rs/rushterm/0.1.5/rushterm/"
+documentation = "https://docs.rs/rushterm/0.2.0/rushterm/"
 homepage = "https://github.com/seanandyrush/rushterm"
 repository = "https://github.com/seanandyrush/rushterm"
 
