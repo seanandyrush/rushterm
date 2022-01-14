@@ -50,6 +50,7 @@
 //!             }),
 //!         ],
 //!         exp: Some("My Main Menu Explanation."),
+//!         exit: true,
 //!     };
 //!     let selection = menu.print().run();
 //!     dbg!(&selection);
