@@ -211,14 +211,16 @@ impl<'a> Menu<'a> {
                 );
             }
             println!();
-        } else if self.exit {
-            println!(
-                "{}{}{}{}",
-                "(".dark_grey(),
-                "Esc".yellow(),
-                ")".dark_grey(),
-                " Exit".red()
-            );
+        } else {
+            if self.exit {
+                println!(
+                    "{}{}{}{}",
+                    "(".dark_grey(),
+                    "Esc".yellow(),
+                    ")".dark_grey(),
+                    " Exit".red()
+                );
+            }
         }
     }
     fn print_bottom(&self) {
@@ -257,11 +259,11 @@ impl<'a> Menu<'a> {
         if *key == None {
             return Err("No Selection".to_string());
         } else if is_sub && *key == Some("Back".to_string()) {
-            self.flush_stdout(stdout_ins);
+            self.flush_stdout(stdout_ins, is_sub);
             return Err("Back".to_string());
         } else if *key == Some("Exit".to_string()) {
             if self.exit {
-                self.flush_stdout(stdout_ins);
+                self.flush_stdout(stdout_ins, is_sub);
                 stdout_ins.flush().unwrap();
                 return Err("Exit".to_string());
             }
@@ -272,7 +274,7 @@ impl<'a> Menu<'a> {
                     if (*key == action.hotkey.map(|f| f.to_string()))
                         || (*key == Some(i.to_string()))
                     {
-                        self.flush_stdout(stdout_ins);
+                        self.flush_stdout(stdout_ins, is_sub);
                         stdout_ins.flush().unwrap();
                         path.push(action.name.to_string());
                         return Ok(Selection {
@@ -287,7 +289,7 @@ impl<'a> Menu<'a> {
                     if (*key == submenu.hotkey.map(|f| f.to_string()))
                         || (*key == Some(i.to_string()))
                     {
-                        self.flush_stdout(stdout_ins);
+                        self.flush_stdout(stdout_ins, is_sub);
                         path.push(submenu.name.to_string());
                         let menu = Menu {
                             name: submenu.name,
@@ -316,9 +318,13 @@ impl<'a> Menu<'a> {
         }
         Err("No Selection".to_string())
     }
-    fn flush_stdout(&self, stdout_ins: &mut Stdout) {
+    fn flush_stdout(&self, stdout_ins: &mut Stdout, is_sub: bool) {
+        let mut rows = 3;
+        if !self.exit && !is_sub {
+            rows -= 1;
+        }
         stdout_ins
-            .queue(cursor::MoveUp(self.items.len() as u16 + 3))
+            .queue(cursor::MoveUp(self.items.len() as u16 + rows))
             .unwrap();
         stdout_ins
             .queue(terminal::Clear(ClearType::FromCursorDown))
