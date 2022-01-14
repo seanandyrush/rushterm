@@ -2,7 +2,7 @@
 //! Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity.
 //! # Example
 //! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
-//! ```
+//! ```rust
 //! use rushterm::{Item, Menu};
 //!
 //! fn main() {
@@ -50,7 +50,7 @@
 //!             },
 //!         ],
 //!         exp: Some("My Main Menu Explanation."),
-//!         exit: true,
+//!         esc: true,
 //!     };
 //!     let selection = menu.run();
 //!     dbg!(&selection);
@@ -74,30 +74,42 @@ use std::{
 pub enum Item<'a> {
     /// A menu item to execute an action.
     Action {
+        /// Action name.
         name: &'a str,
+        /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
+        /// An optional explanation in gray color next to the item.
         exp: Option<&'a str>,
     },
     /// A menu item to enter branch menus.
     SubMenu {
+        /// Sub menu name. It can be distinguished by the `+` character before it.
         name: &'a str,
+        /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
+        /// An optional explanation in gray color next to the item.
         exp: Option<&'a str>,
+        /// Sub menu items should be a vector.
         items: Vec<Item<'a>>,
     },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu<'a> {
+    /// Menu name is displayed at the top.
     pub name: &'a str,
+    /// An optional explanation in gray color next to the menu name.
     pub exp: Option<&'a str>,
+    /// Menu items should be a vector.
     pub items: Vec<Item<'a>>,
-    /// enable exiting menu by `Esc` hotkey.
+    /// Enable exiting menu by `Esc` hotkey.
     pub esc: bool,
 }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
 pub struct Selection {
+    /// Name of selected item
     name: String,
+    /// A vector containing direction of the selected item in the menu tree.
     path: Vec<String>,
 }
 
@@ -105,38 +117,58 @@ impl<'a> Menu<'a> {
     /// Prints the items, executes the menu and returns a `Result`.
     pub fn run(&self) -> Result<Selection, String> {
         let mut stdout_ins = stdout();
-        self.print_top(&vec![self.name.to_string()]);
-        self.print_items(false);
-        self.print_bottom();
-        self.matcher(&mut stdout_ins)
+        let mut hover = 0 as usize;
+        self.printer(&mut stdout_ins, &mut hover)
     }
-    fn matcher(&self, stdout_ins: &mut Stdout) -> Result<Selection, String> {
+    fn printer(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
+        self.print_top(&vec![self.name.to_string()]);
+        self.print_items(false, hover);
+        self.print_bottom();
+        self.matcher(stdout_ins, hover)
+    }
+    fn matcher(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
         let keycode = self.poll_read();
         let key = self.match_keycode(keycode);
-        let res = self.match_selection(&key, false, stdout_ins, &mut vec![self.name.to_string()]);
+        let res = self.match_selection(
+            &key,
+            false,
+            stdout_ins,
+            &mut vec![self.name.to_string()],
+            hover,
+        );
         if res == Err("No Selection".to_string()) {
-            self.matcher(stdout_ins)
+            self.matcher(stdout_ins, hover)
         } else {
             res
         }
     }
     fn run_sub(&self, path: &mut Vec<String>) -> Result<Selection, String> {
         let mut stdout_ins = stdout();
+        let mut hover = 0 as usize;
+        self.printer_sub(path, &mut stdout_ins, &mut hover)
+    }
+    fn printer_sub(
+        &self,
+        path: &mut Vec<String>,
+        stdout_ins: &mut Stdout,
+        hover: &mut usize,
+    ) -> Result<Selection, String> {
         self.print_top(path);
-        self.print_items(true);
+        self.print_items(true, hover);
         self.print_bottom();
-        self.matcher_sub(&mut stdout_ins, path)
+        self.matcher_sub(stdout_ins, path, hover)
     }
     fn matcher_sub(
         &self,
         stdout_ins: &mut Stdout,
         path: &mut Vec<String>,
+        hover: &mut usize,
     ) -> Result<Selection, String> {
         let keycode = self.poll_read();
         let key = self.match_keycode(keycode);
-        let res = self.match_selection(&key, true, stdout_ins, path);
+        let res = self.match_selection(&key, true, stdout_ins, path, hover);
         if res == Err("No Selection".to_string()) {
-            self.matcher_sub(stdout_ins, path)
+            self.matcher_sub(stdout_ins, path, hover)
         } else {
             res
         }
@@ -150,7 +182,7 @@ impl<'a> Menu<'a> {
         }
         println!();
     }
-    fn print_items(&self, is_sub: bool) {
+    fn print_items(&self, is_sub: bool, hover: &mut usize) {
         for (i, item) in self.items.iter().enumerate() {
             match *item {
                 Item::Action { name, hotkey, exp } => {
@@ -164,7 +196,11 @@ impl<'a> Menu<'a> {
                         ),
                         None => print!("   "),
                     }
-                    print!("  {}", name);
+                    if i == *hover {
+                        print!("  {}", name.cyan());
+                    } else {
+                        print!("  {}", name);
+                    }
                     if let Some(exp_str) = exp {
                         print!(" {}", exp_str.dark_grey());
                     }
@@ -183,7 +219,11 @@ impl<'a> Menu<'a> {
                         ),
                         None => print!("   "),
                     }
-                    print!(" +{}", name);
+                    if i == *hover {
+                        print!(" +{}", name.cyan());
+                    } else {
+                        print!(" +{}", name);
+                    }
                     if let Some(exp_str) = exp {
                         print!(" {}", exp_str.dark_grey());
                     }
@@ -191,35 +231,48 @@ impl<'a> Menu<'a> {
                 }
             }
         }
+        print!(
+            "{}{}{}{}{}{}{}{}{}{}",
+            "(".dark_grey(),
+            "Up".yellow(),
+            ")".dark_grey(),
+            ", (".dark_grey(),
+            "Down".yellow(),
+            ")".dark_grey(),
+            ", (".dark_grey(),
+            "Enter".yellow(),
+            ") ".dark_grey(),
+            "Select",
+        );
         if is_sub {
             print!(
                 "{}{}{}{}",
-                "(".dark_grey(),
+                ", (".dark_grey(),
                 "Backspace".yellow(),
-                ")".dark_grey(),
-                " Back".magenta()
+                ") ".dark_grey(),
+                "Back",
             );
             if self.esc {
                 print!(
                     "{}{}{}{}",
                     ", (".dark_grey(),
                     "Esc".yellow(),
-                    ")".dark_grey(),
-                    " Exit".red()
+                    ") ".dark_grey(),
+                    "Exit",
                 );
             }
-            println!();
         } else {
             if self.esc {
-                println!(
+                print!(
                     "{}{}{}{}",
-                    "(".dark_grey(),
+                    ", (".dark_grey(),
                     "Esc".yellow(),
-                    ")".dark_grey(),
-                    " Exit".red()
+                    ") ".dark_grey(),
+                    "Exit",
                 );
             }
         }
+        println!();
     }
     fn print_bottom(&self) {
         println!(
@@ -240,6 +293,8 @@ impl<'a> Menu<'a> {
     }
     fn match_keycode(&self, keycode: KeyCode) -> Option<String> {
         match keycode {
+            KeyCode::Up => Some(String::from("Up")),
+            KeyCode::Down => Some(String::from("Down")),
             KeyCode::Enter => Some(String::from("Enter")),
             KeyCode::Esc => Some(String::from("Exit")),
             KeyCode::Backspace => Some(String::from("Back")),
@@ -253,6 +308,7 @@ impl<'a> Menu<'a> {
         is_sub: bool,
         stdout_ins: &mut Stdout,
         path: &mut Vec<String>,
+        hover: &mut usize,
     ) -> Result<Selection, String> {
         if *key == None {
             return Err("No Selection".to_string());
@@ -265,11 +321,34 @@ impl<'a> Menu<'a> {
                 stdout_ins.flush().unwrap();
                 return Err("Exit".to_string());
             }
+        } else if *key == Some("Up".to_string()) {
+            if *hover > 0 {
+                *hover -= 1;
+                self.flush_stdout(stdout_ins, is_sub);
+                if path.len() == 1 {
+                    return self.printer(stdout_ins, hover);
+                } else {
+                    return self.printer_sub(path, stdout_ins, hover);
+                }
+            }
+        } else if *key == Some("Down".to_string()) {
+            if (*hover + 1) < self.items.len() {
+                *hover += 1;
+                self.flush_stdout(stdout_ins, is_sub);
+                if path.len() == 1 {
+                    return self.printer(stdout_ins, hover);
+                } else {
+                    return self.printer_sub(path, stdout_ins, hover);
+                }
+            }
         }
         for (i, item) in self.items.iter().enumerate() {
             match item {
                 Item::Action { name, hotkey, .. } => {
-                    if (*key == hotkey.map(|f| f.to_string())) || (*key == Some(i.to_string())) {
+                    if (*key == hotkey.map(|f| f.to_string()))
+                        || (*key == Some(i.to_string()))
+                        || (*key == Some("Enter".to_string()) && i == *hover)
+                    {
                         self.flush_stdout(stdout_ins, is_sub);
                         stdout_ins.flush().unwrap();
                         path.push(name.to_string());
@@ -287,7 +366,10 @@ impl<'a> Menu<'a> {
                     exp,
                     items,
                 } => {
-                    if (*key == hotkey.map(|f| f.to_string())) || (*key == Some(i.to_string())) {
+                    if (*key == hotkey.map(|f| f.to_string()))
+                        || (*key == Some(i.to_string()))
+                        || (*key == Some("Enter".to_string()) && i == *hover)
+                    {
                         self.flush_stdout(stdout_ins, is_sub);
                         path.push(name.to_string());
                         let sub_menu = Menu {
