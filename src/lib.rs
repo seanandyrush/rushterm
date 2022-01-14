@@ -74,30 +74,42 @@ use std::{
 pub enum Item<'a> {
     /// A menu item to execute an action.
     Action {
+        /// Action name.
         name: &'a str,
+        /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
+        /// An optional explanation in gray color next to the item.
         exp: Option<&'a str>,
     },
     /// A menu item to enter branch menus.
     SubMenu {
+        /// Sub menu name. It can be distinguished by the `+` character before it.
         name: &'a str,
+        /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
+        /// An optional explanation in gray color next to the item.
         exp: Option<&'a str>,
+        /// Sub menu items should be a vector.
         items: Vec<Item<'a>>,
     },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu<'a> {
+    /// Menu name is displayed at the top.
     pub name: &'a str,
+    /// An optional explanation in gray color next to the menu name.
     pub exp: Option<&'a str>,
+    /// Menu items should be a vector.
     pub items: Vec<Item<'a>>,
-    /// enable exiting menu by `Esc` hotkey.
+    /// Enable exiting menu by `Esc` hotkey.
     pub esc: bool,
 }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
 pub struct Selection {
+    /// Name of selected item
     name: String,
+    /// A vector containing direction of the selected item in the menu tree.
     path: Vec<String>,
 }
 
