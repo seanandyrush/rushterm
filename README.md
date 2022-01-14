@@ -1,7 +1,7 @@
 # Rushterm
 Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity.
 # Example
-Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll chain `.print()` and `.run()` methods on the instance to execute our menu:
+Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
 ```rust
 use rushterm::{Action, Item, Menu, SubMenu};
 
@@ -50,8 +50,9 @@ fn main() {
             }),
         ],
         exp: Some("My Main Menu Explanation."),
+        exit: true,
     };
-    let selection = menu.print().run();
+    let selection = menu.run();
     dbg!(&selection);
 }
 ```

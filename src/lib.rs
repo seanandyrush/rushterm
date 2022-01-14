@@ -1,7 +1,7 @@
 //! # Rushterm
 //! Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity.
 //! # Example
-//! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll chain `.print()` and `.run()` methods on the instance to execute our menu:
+//! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
 //! ```
 //! use rushterm::{Action, Item, Menu, SubMenu};
 //!
@@ -58,10 +58,16 @@
 //! If selection is successful, `run()` method will return us a `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
 
 use crossterm::{
+    cursor,
     event::{poll, read, Event, KeyCode, KeyEvent},
     style::Stylize,
+    terminal::{self, ClearType},
+    QueueableCommand,
 };
-use std::time::Duration;
+use std::{
+    io::{stdout, Stdout, Write},
+    time::Duration,
+};
 /// Anything that can be listed in a menu.
 #[derive(Clone)]
 pub enum Item<'a> {
@@ -73,6 +79,8 @@ pub struct Menu<'a> {
     pub name: &'a str,
     pub exp: Option<&'a str>,
     pub items: Vec<Item<'a>>,
+    /// Posibility of exiting.
+    pub exit: bool,
 }
 /// A menu item to enter branch menus.
 #[derive(Clone)]
@@ -97,48 +105,51 @@ pub struct Selection {
 }
 
 impl<'a> Menu<'a> {
-    /// Prints the items in the menu.
-    pub fn print(&self) -> &Self {
+    /// Prints the items, executes the menu and returns a `Result`.
+    pub fn run(&self) -> Result<Selection, String> {
+        let mut stdout_ins = stdout();
         self.print_top(&vec![self.name.to_string()]);
         self.print_items(false);
         self.print_bottom();
-        self
+        self.matcher(&mut stdout_ins)
     }
-    /// Executes the menu and returns a `Result`.
-    pub fn run(&self) -> Result<Selection, String> {
+    fn matcher(&self, stdout_ins: &mut Stdout) -> Result<Selection, String> {
         let keycode = self.poll_read();
         let key = self.match_keycode(keycode);
-        let res = self.match_selection(&key, false, &mut vec![self.name.to_string()]);
+        let res = self.match_selection(&key, false, stdout_ins, &mut vec![self.name.to_string()]);
         if res == Err("No Selection".to_string()) {
-            self.run()
+            self.matcher(stdout_ins)
         } else {
             res
         }
     }
-    fn print_sub(&self, path: &Vec<String>) -> &Self {
+    fn run_sub(&self, path: &mut Vec<String>) -> Result<Selection, String> {
+        let mut stdout_ins = stdout();
         self.print_top(path);
         self.print_items(true);
         self.print_bottom();
-        self
+        self.matcher_sub(&mut stdout_ins, path)
     }
-    fn run_sub(&self, path: &mut Vec<String>) -> Result<Selection, String> {
+    fn matcher_sub(
+        &self,
+        stdout_ins: &mut Stdout,
+        path: &mut Vec<String>,
+    ) -> Result<Selection, String> {
         let keycode = self.poll_read();
         let key = self.match_keycode(keycode);
-        let res = self.match_selection(&key, true, path);
+        let res = self.match_selection(&key, true, stdout_ins, path);
         if res == Err("No Selection".to_string()) {
-            self.run_sub(path)
+            self.matcher_sub(stdout_ins, path)
         } else {
             res
         }
     }
     fn print_top(&self, path: &Vec<String>) {
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         for dir in path {
-            print!("{}{}", dir, "/".cyan());
+            print!("{}/", dir);
         }
-        println!();
         if let Some(exp) = self.exp {
-            println!("{}", exp.dark_grey());
+            print!(" {}", exp.dark_grey());
         }
         println!();
     }
@@ -156,7 +167,7 @@ impl<'a> Menu<'a> {
                         ),
                         None => print!("   "),
                     }
-                    print!(" {}{}", "+".cyan(), submenu.name);
+                    print!(" +{}", submenu.name);
                     if let Some(exp) = submenu.exp {
                         print!(" {}", exp.dark_grey());
                     }
@@ -182,32 +193,34 @@ impl<'a> Menu<'a> {
             }
         }
         if is_sub {
-            println!(
+            print!(
                 "{}{}{}{}",
                 "(".dark_grey(),
-                "Bksp".yellow(),
+                "Backspace".yellow(),
                 ")".dark_grey(),
                 " Back".magenta()
             );
+            if self.exit {
+                print!(
+                    "{}{}{}{}",
+                    ", (".dark_grey(),
+                    "Esc".yellow(),
+                    ")".dark_grey(),
+                    " Exit".red()
+                );
+            }
+            println!();
+        } else if self.exit {
             println!(
                 "{}{}{}{}",
                 "(".dark_grey(),
                 "Esc".yellow(),
                 ")".dark_grey(),
-                "  Exit".red()
-            );
-        } else {
-            println!(
-                "{}{}{}{}",
-                "(".dark_grey(),
-                "Esc".yellow(),
-                ")".dark_grey(),
-                "  Exit".red()
+                " Exit".red()
             );
         }
     }
     fn print_bottom(&self) {
-        println!();
         println!(
             "{}",
             "Press an index number or a hotkey to select:".dark_grey()
@@ -237,16 +250,20 @@ impl<'a> Menu<'a> {
         &self,
         key: &Option<String>,
         is_sub: bool,
+        stdout_ins: &mut Stdout,
         path: &mut Vec<String>,
     ) -> Result<Selection, String> {
         if *key == None {
             return Err("No Selection".to_string());
-        }
-        if is_sub && *key == Some("Back".to_string()) {
+        } else if is_sub && *key == Some("Back".to_string()) {
+            self.flush_stdout(stdout_ins);
             return Err("Back".to_string());
-        }
-        if *key == Some("Exit".to_string()) {
-            return Err("Exit".to_string());
+        } else if *key == Some("Exit".to_string()) {
+            if self.exit {
+                self.flush_stdout(stdout_ins);
+                stdout_ins.flush().unwrap();
+                return Err("Exit".to_string());
+            }
         }
         for (i, item) in self.items.iter().enumerate() {
             match item {
@@ -254,6 +271,8 @@ impl<'a> Menu<'a> {
                     if (*key == action.hotkey.map(|f| f.to_string()))
                         || (*key == Some(i.to_string()))
                     {
+                        self.flush_stdout(stdout_ins);
+                        stdout_ins.flush().unwrap();
                         path.push(action.name.to_string());
                         return Ok(Selection {
                             name: action.name.to_string(),
@@ -267,21 +286,23 @@ impl<'a> Menu<'a> {
                     if (*key == submenu.hotkey.map(|f| f.to_string()))
                         || (*key == Some(i.to_string()))
                     {
+                        self.flush_stdout(stdout_ins);
                         path.push(submenu.name.to_string());
                         let menu = Menu {
                             name: submenu.name,
                             items: submenu.items.clone(),
                             exp: submenu.exp,
+                            exit: self.exit,
                         };
-                        let sub_result = menu.print_sub(path).run_sub(path);
+                        let sub_result = menu.run_sub(path);
                         match sub_result {
                             Ok(ok) => return Ok(ok),
                             Err(err) if &err == "Back" => {
                                 path.pop();
                                 if path.len() == 1 {
-                                    return self.print().run();
+                                    return self.run();
                                 } else {
-                                    return self.print_sub(path).run_sub(path);
+                                    return self.run_sub(path);
                                 }
                             }
                             Err(err) => return Err(err),
@@ -293,5 +314,13 @@ impl<'a> Menu<'a> {
             };
         }
         Err("No Selection".to_string())
+    }
+    fn flush_stdout(&self, stdout_ins: &mut Stdout) {
+        stdout_ins
+            .queue(cursor::MoveUp(self.items.len() as u16 + 3))
+            .unwrap();
+        stdout_ins
+            .queue(terminal::Clear(ClearType::FromCursorDown))
+            .unwrap();
     }
 }

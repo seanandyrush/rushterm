@@ -45,7 +45,8 @@ fn main() {
             }),
         ],
         exp: Some("My Main Menu Explanation."),
+        exit: true,
     };
-    let selection = menu.print().run();
+    let selection = menu.run();
     dbg!(&selection);
 }
