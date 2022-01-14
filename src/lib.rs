@@ -1,7 +1,7 @@
 //! # Rushterm
 //! Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity.
 //! # Example
-//! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
+//! Firstly, we'll need to construct a `Menu` instance with its `Item`s. Bring them into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
 //! ```rust
 //! use rushterm::{Item, Menu};
 //!
@@ -56,7 +56,7 @@
 //!     dbg!(&selection);
 //! }
 //! ```
-//! If selection is successful, `run()` method will return us a `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
+//! If selection is successful, `run()` method will return us `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
 
 use crossterm::{
     cursor,
@@ -69,52 +69,52 @@ use std::{
     io::{stdout, Stdout, Write},
     time::Duration,
 };
-/// Anything that can be listed in a menu.
+/// Anything that can be listed in `Menu`.
 #[derive(Clone)]
 pub enum Item<'a> {
-    /// A menu item to execute an action.
+    /// A menu item to execute an action. Exits `Menu`.
     Action {
         /// Action name.
         name: &'a str,
         /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
-        /// An optional explanation in gray color next to the item.
+        /// Optional explanation in gray color is displayed next to the item.
         exp: Option<&'a str>,
     },
-    /// A menu item to enter branch menus.
+    /// A menu item to enter branch menus. Eclipses `Menu` or another `SubMenu`.
     SubMenu {
         /// Sub menu name. It can be distinguished by the `+` character before it.
         name: &'a str,
         /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
         hotkey: Option<char>,
-        /// An optional explanation in gray color next to the item.
+        /// Optional explanation in gray color is displayed next to the item.
         exp: Option<&'a str>,
-        /// Sub menu items should be a vector.
+        /// `SubMenu` items should be vector of `Item`s.
         items: Vec<Item<'a>>,
     },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu<'a> {
-    /// Menu name is displayed at the top.
+    /// `Menu` name is displayed at the top.
     pub name: &'a str,
-    /// An optional explanation in gray color next to the menu name.
+    /// Optional explanation in gray color next to the menu name.
     pub exp: Option<&'a str>,
-    /// Menu items should be a vector.
+    /// `Menu` items should be vector of `Item`s.
     pub items: Vec<Item<'a>>,
-    /// Enable exiting menu by `Esc` hotkey.
+    /// Enable exiting menu by `Esc` hotkey. Usually set it to `true`. But it may be useful to set to `false` when you want to restrict the user from escaping without any selection.
     pub esc: bool,
 }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
 pub struct Selection {
-    /// Name of selected item
+    /// Name of selected `Item`.
     name: String,
-    /// A vector containing direction of the selected item in the menu tree.
+    /// Vector containing direction of the selected item in the menu tree.
     path: Vec<String>,
 }
 
 impl<'a> Menu<'a> {
-    /// Prints the items, executes the menu and returns a `Result`.
+    /// Prints out `Item`s, executes the `Menu` and returns `Result`.
     pub fn run(&self) -> Result<Selection, String> {
         let mut stdout_ins = stdout();
         let mut hover = 0 as usize;
