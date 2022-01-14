@@ -50,7 +50,7 @@ fn main() {
             },
         ],
         exp: Some("My Main Menu Explanation."),
-        exit: true,
+        esc: true,
     };
     let selection = menu.run();
     dbg!(&selection);
