@@ -3,56 +3,56 @@
 //! # Example
 //! Firstly, we'll need to construct a `Menu` instance. Bring `Menu` and necessary sub types into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
 //! ```
-//! use rushterm::{Action, Item, Menu, SubMenu};
+//! use rushterm::{Item, Menu};
 //!
 //! fn main() {
 //!     let menu = Menu {
 //!         name: "My Main Menu",
 //!         items: vec![
-//!             Item::Action(Action {
+//!             Item::Action {
 //!                 name: "Action0",
 //!                 hotkey: Some('a'),
 //!                 exp: Some("Action0 Explanation. This Has Been Assigned To A Hotkey."),
-//!             }),
-//!             Item::Action(Action {
+//!             },
+//!             Item::Action {
 //!                 name: "Action1",
 //!                 hotkey: None,
 //!                 exp: Some("Action1 Explanation. This Has No Hotkey."),
-//!             }),
-//!             Item::SubMenu(SubMenu {
+//!             },
+//!             Item::SubMenu {
 //!                 name: "Submenu0",
 //!                 hotkey: Some('s'),
 //!                 exp: Some("Submenu0 explanation."),
 //!                 items: vec![
-//!                     Item::Action(Action {
+//!                     Item::Action {
 //!                         name: "Sub0 Action0",
 //!                         hotkey: Some('a'),
 //!                         exp: Some("Sub Action0 Explanation. This Has Been Assigned To A Hotkey."),
-//!                     }),
-//!                     Item::SubMenu(SubMenu {
+//!                     },
+//!                     Item::SubMenu {
 //!                         name: "Deepermenu0",
 //!                         hotkey: Some('d'),
 //!                         exp: Some("Deepermenu0 Explanation."),
 //!                         items: vec![
-//!                             Item::Action(Action {
+//!                             Item::Action {
 //!                                 name: "Deeper Action0",
 //!                                 hotkey: Some('f'),
 //!                                 exp: None,
-//!                             }),
-//!                             Item::Action(Action {
+//!                             },
+//!                             Item::Action {
 //!                                 name: "Deeper Action1",
 //!                                 hotkey: Some('g'),
 //!                                 exp: Some("Deeper Action1 Explanation."),
-//!                             }),
+//!                             },
 //!                         ],
-//!                     }),
+//!                     },
 //!                 ],
-//!             }),
+//!             },
 //!         ],
 //!         exp: Some("My Main Menu Explanation."),
 //!         exit: true,
 //!     };
-//!     let selection = menu.print().run();
+//!     let selection = menu.run();
 //!     dbg!(&selection);
 //! }
 //! ```
@@ -72,8 +72,17 @@ use std::{
 /// Anything that can be listed in a menu.
 #[derive(Clone)]
 pub enum Item<'a> {
-    SubMenu(SubMenu<'a>),
-    Action(Action<'a>),
+    Action {
+        name: &'a str,
+        hotkey: Option<char>,
+        exp: Option<&'a str>,
+    },
+    SubMenu {
+        name: &'a str,
+        hotkey: Option<char>,
+        exp: Option<&'a str>,
+        items: Vec<Item<'a>>,
+    },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu<'a> {
@@ -85,19 +94,19 @@ pub struct Menu<'a> {
 }
 /// A menu item to enter branch menus.
 #[derive(Clone)]
-pub struct SubMenu<'a> {
-    pub name: &'a str,
-    pub hotkey: Option<char>,
-    pub exp: Option<&'a str>,
-    pub items: Vec<Item<'a>>,
-}
+// pub struct SubMenu<'a> {
+//     pub name: &'a str,
+//     pub hotkey: Option<char>,
+//     pub exp: Option<&'a str>,
+//     pub items: Vec<Item<'a>>,
+// }
 /// A menu item to execute an action.
-#[derive(Clone)]
-pub struct Action<'a> {
-    pub name: &'a str,
-    pub hotkey: Option<char>,
-    pub exp: Option<&'a str>,
-}
+// #[derive(Clone)]
+// pub struct Action<'a> {
+//     pub name: &'a str,
+//     pub hotkey: Option<char>,
+//     pub exp: Option<&'a str>,
+// }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
 pub struct Selection {
@@ -156,38 +165,40 @@ impl<'a> Menu<'a> {
     }
     fn print_items(&self, is_sub: bool) {
         for (i, item) in self.items.iter().enumerate() {
-            match item {
-                Item::SubMenu(submenu) => {
+            match *item {
+                Item::Action { name, hotkey, exp } => {
                     print!("{}{}", i.to_string().yellow(), ".".dark_grey());
-                    match submenu.hotkey {
-                        Some(hotkey) => print!(
+                    match hotkey {
+                        Some(chr) => print!(
                             "{}{}{}",
                             "(".dark_grey(),
-                            hotkey.to_string().to_uppercase().yellow(),
+                            chr.to_string().to_uppercase().yellow(),
                             ")".dark_grey()
                         ),
                         None => print!("   "),
                     }
-                    print!(" +{}", submenu.name);
-                    if let Some(exp) = submenu.exp {
-                        print!(" {}", exp.dark_grey());
+                    print!("  {}", name);
+                    if let Some(exp_str) = exp {
+                        print!(" {}", exp_str.dark_grey());
                     }
                     println!();
                 }
-                Item::Action(action) => {
+                Item::SubMenu {
+                    name, hotkey, exp, ..
+                } => {
                     print!("{}{}", i.to_string().yellow(), ".".dark_grey());
-                    match action.hotkey {
-                        Some(hotkey) => print!(
+                    match hotkey {
+                        Some(chr) => print!(
                             "{}{}{}",
                             "(".dark_grey(),
-                            hotkey.to_string().to_uppercase().yellow(),
+                            chr.to_string().to_uppercase().yellow(),
                             ")".dark_grey()
                         ),
                         None => print!("   "),
                     }
-                    print!("  {}", action.name);
-                    if let Some(exp) = action.exp {
-                        print!(" {}", exp.dark_grey());
+                    print!(" +{}", name);
+                    if let Some(exp_str) = exp {
+                        print!(" {}", exp_str.dark_grey());
                     }
                     println!();
                 }
@@ -270,34 +281,35 @@ impl<'a> Menu<'a> {
         }
         for (i, item) in self.items.iter().enumerate() {
             match item {
-                Item::Action(action) => {
-                    if (*key == action.hotkey.map(|f| f.to_string()))
-                        || (*key == Some(i.to_string()))
-                    {
+                Item::Action { name, hotkey, .. } => {
+                    if (*key == hotkey.map(|f| f.to_string())) || (*key == Some(i.to_string())) {
                         self.flush_stdout(stdout_ins, is_sub);
                         stdout_ins.flush().unwrap();
-                        path.push(action.name.to_string());
+                        path.push(name.to_string());
                         return Ok(Selection {
-                            name: action.name.to_string(),
+                            name: name.to_string(),
                             path: path.to_vec(),
                         });
                     } else {
                         continue;
                     }
                 }
-                Item::SubMenu(submenu) => {
-                    if (*key == submenu.hotkey.map(|f| f.to_string()))
-                        || (*key == Some(i.to_string()))
-                    {
+                Item::SubMenu {
+                    name,
+                    hotkey,
+                    exp,
+                    items,
+                } => {
+                    if (*key == hotkey.map(|f| f.to_string())) || (*key == Some(i.to_string())) {
                         self.flush_stdout(stdout_ins, is_sub);
-                        path.push(submenu.name.to_string());
-                        let menu = Menu {
-                            name: submenu.name,
-                            items: submenu.items.clone(),
-                            exp: submenu.exp,
+                        path.push(name.to_string());
+                        let sub_menu = Menu {
+                            name: *name,
+                            items: items.clone(),
+                            exp: *exp,
                             exit: self.exit,
                         };
-                        let sub_result = menu.run_sub(path);
+                        let sub_result = sub_menu.run_sub(path);
                         match sub_result {
                             Ok(ok) => return Ok(ok),
                             Err(err) if &err == "Back" => {
