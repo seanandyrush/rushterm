@@ -72,11 +72,13 @@ use std::{
 /// Anything that can be listed in a menu.
 #[derive(Clone)]
 pub enum Item<'a> {
+    /// A menu item to execute an action.
     Action {
         name: &'a str,
         hotkey: Option<char>,
         exp: Option<&'a str>,
     },
+    /// A menu item to enter branch menus.
     SubMenu {
         name: &'a str,
         hotkey: Option<char>,
@@ -92,21 +94,6 @@ pub struct Menu<'a> {
     /// Posibility of exiting.
     pub exit: bool,
 }
-/// A menu item to enter branch menus.
-#[derive(Clone)]
-// pub struct SubMenu<'a> {
-//     pub name: &'a str,
-//     pub hotkey: Option<char>,
-//     pub exp: Option<&'a str>,
-//     pub items: Vec<Item<'a>>,
-// }
-/// A menu item to execute an action.
-// #[derive(Clone)]
-// pub struct Action<'a> {
-//     pub name: &'a str,
-//     pub hotkey: Option<char>,
-//     pub exp: Option<&'a str>,
-// }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
 pub struct Selection {
