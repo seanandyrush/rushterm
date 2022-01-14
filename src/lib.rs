@@ -108,9 +108,9 @@ pub struct Menu<'a> {
 #[derive(Debug, PartialEq)]
 pub struct Selection {
     /// Name of selected `Item`.
-    name: String,
+    pub name: String,
     /// Vector containing direction of the selected item in the menu tree.
-    path: Vec<String>,
+    pub path: Vec<String>,
 }
 
 impl<'a> Menu<'a> {
