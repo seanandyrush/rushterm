@@ -91,8 +91,8 @@ pub struct Menu<'a> {
     pub name: &'a str,
     pub exp: Option<&'a str>,
     pub items: Vec<Item<'a>>,
-    /// Posibility of exiting.
-    pub exit: bool,
+    /// enable exiting menu by `Esc` hotkey.
+    pub esc: bool,
 }
 /// Gives the data of the selection made in the menu.
 #[derive(Debug, PartialEq)]
@@ -199,7 +199,7 @@ impl<'a> Menu<'a> {
                 ")".dark_grey(),
                 " Back".magenta()
             );
-            if self.exit {
+            if self.esc {
                 print!(
                     "{}{}{}{}",
                     ", (".dark_grey(),
@@ -210,7 +210,7 @@ impl<'a> Menu<'a> {
             }
             println!();
         } else {
-            if self.exit {
+            if self.esc {
                 println!(
                     "{}{}{}{}",
                     "(".dark_grey(),
@@ -260,7 +260,7 @@ impl<'a> Menu<'a> {
             self.flush_stdout(stdout_ins, is_sub);
             return Err("Back".to_string());
         } else if *key == Some("Exit".to_string()) {
-            if self.exit {
+            if self.esc {
                 self.flush_stdout(stdout_ins, is_sub);
                 stdout_ins.flush().unwrap();
                 return Err("Exit".to_string());
@@ -294,7 +294,7 @@ impl<'a> Menu<'a> {
                             name: *name,
                             items: items.clone(),
                             exp: *exp,
-                            exit: self.exit,
+                            esc: self.esc,
                         };
                         let sub_result = sub_menu.run_sub(path);
                         match sub_result {
@@ -319,7 +319,7 @@ impl<'a> Menu<'a> {
     }
     fn flush_stdout(&self, stdout_ins: &mut Stdout, is_sub: bool) {
         let mut rows = 3;
-        if !self.exit && !is_sub {
+        if !self.esc && !is_sub {
             rows -= 1;
         }
         stdout_ins
