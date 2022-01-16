@@ -280,7 +280,7 @@ impl<'a> Menu<'a> {
     fn poll_read(&self) -> KeyCode {
         loop {
             if let Ok(Event::Key(KeyEvent { code, .. })) = read() {
-                return code;
+                break code;
             }
         }
     }
