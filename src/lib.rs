@@ -60,15 +60,12 @@
 
 use crossterm::{
     cursor,
-    event::{poll, read, Event, KeyCode, KeyEvent},
+    event::{read, Event, KeyCode, KeyEvent},
     style::Stylize,
     terminal::{self, ClearType},
     QueueableCommand,
 };
-use std::{
-    io::{stdout, Stdout, Write},
-    time::Duration,
-};
+use std::io::{stdout, Stdout, Write};
 /// Anything that can be listed in `Menu`.
 #[derive(Clone)]
 pub enum Item<'a> {
@@ -281,14 +278,10 @@ impl<'a> Menu<'a> {
         )
     }
     fn poll_read(&self) -> KeyCode {
-        if let Ok(true) = poll(Duration::MAX) {
+        loop {
             if let Ok(Event::Key(KeyEvent { code, .. })) = read() {
-                return code;
-            } else {
-                return KeyCode::Esc;
+                break code;
             }
-        } else {
-            return KeyCode::Esc;
         }
     }
     fn match_keycode(&self, keycode: KeyCode) -> Option<String> {
