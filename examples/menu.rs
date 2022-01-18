@@ -14,15 +14,26 @@ fn main() {
         hotkey: None,
         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
       },
+      Item::InputText {
+        name: "InputText0".to_string(),
+        hotkey: Some('i'),
+        exp: Some("InputText0 Explanation.".to_string()),
+        default: Some("default text".to_string()),
+      },
       Item::SubMenu {
         name: "Submenu0".to_string(),
         hotkey: Some('s'),
         exp: Some("Submenu0 explanation.".to_string()),
         items: vec![
           Item::Action {
-            name: "Sub0 Action0".to_string(),
+            name: "Sub Action0".to_string(),
             hotkey: Some('a'),
             exp: Some("Sub Action0 Explanation. This Has Been Assigned To A Hotkey.".to_string()),
+          },
+          Item::Action {
+            name: "Sub Action1".to_string(),
+            hotkey: Some('c'),
+            exp: Some("Sub Action1 Explanation. This Has Been Assigned To A Hotkey.".to_string()),
           },
           Item::SubMenu {
             name: "Deepermenu0".to_string(),
@@ -45,7 +56,7 @@ fn main() {
       },
     ],
     exp: Some("My Main Menu Explanation.".to_string()),
-    esc: true,
+    esc: false,
   };
   let selection = menu.run();
   dbg!(&selection);

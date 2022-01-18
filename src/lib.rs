@@ -65,7 +65,7 @@ use crossterm::{
   terminal::{self, ClearType},
   QueueableCommand,
 };
-use std::io::{stdout, Stdout, Write};
+use std::io::{stdin, stdout, Stdout, Write};
 /// Anything that can be listed in `Menu`.
 #[derive(Clone)]
 pub enum Item {
@@ -89,6 +89,17 @@ pub enum Item {
     /// `SubMenu` items should be vector of `Item`s.
     items: Vec<Item>,
   },
+  /// A menu item to enter text. It can be distinguished by the `=` character after it.
+  InputText {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+    /// Default input value.
+    default: Option<String>,
+  },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu {
@@ -108,6 +119,7 @@ pub struct Selection {
   pub name: String,
   /// Vector containing direction of the selected item in the menu tree.
   pub path: Vec<String>,
+  pub value: Option<String>,
 }
 
 impl Menu {
@@ -119,8 +131,8 @@ impl Menu {
   }
   fn printer(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
     self.print_top(&vec![self.name.to_string()]);
-    self.print_items(false, hover);
-    self.print_bottom();
+    self.print_items(hover);
+    self.print_bottom(false);
     self.matcher(stdout_ins, hover)
   }
   fn matcher(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
@@ -151,8 +163,8 @@ impl Menu {
     hover: &mut usize,
   ) -> Result<Selection, String> {
     self.print_top(path);
-    self.print_items(true, hover);
-    self.print_bottom();
+    self.print_items(hover);
+    self.print_bottom(true);
     self.matcher_sub(stdout_ins, path, hover)
   }
   fn matcher_sub(
@@ -179,55 +191,29 @@ impl Menu {
     }
     println!();
   }
-  fn print_items(&self, is_sub: bool, hover: &mut usize) {
+  fn print_items(&self, hover: &mut usize) {
     for (i, item) in self.items.iter().enumerate() {
       match item {
         Item::Action { name, hotkey, exp } => {
-          print!("{}{}", i.to_string().yellow(), ".".dark_grey());
-          match hotkey {
-            Some(chr) => print!(
-              "{}{}{}",
-              "(".dark_grey(),
-              chr.to_string().to_uppercase().yellow(),
-              ")".dark_grey()
-            ),
-            None => print!("   "),
-          }
-          if i == *hover {
-            print!("  {}", String::from(name).cyan());
-          } else {
-            print!("  {}", name);
-          }
-          if let Some(exp_str) = exp {
-            print!(" {}", String::from(exp_str).dark_grey());
-          }
-          println!();
+          self.print_hotkey(&i, hotkey);
+          self.print_name_exp(&i, hover, false, name, exp);
         }
         Item::SubMenu {
           name, hotkey, exp, ..
         } => {
-          print!("{}{}", i.to_string().yellow(), ".".dark_grey());
-          match hotkey {
-            Some(chr) => print!(
-              "{}{}{}",
-              "(".dark_grey(),
-              chr.to_string().to_uppercase().yellow(),
-              ")".dark_grey()
-            ),
-            None => print!("   "),
-          }
-          if i == *hover {
-            print!(" +{}", String::from(name).cyan());
-          } else {
-            print!(" +{}", name);
-          }
-          if let Some(exp_str) = exp {
-            print!(" {}", String::from(exp_str).dark_grey());
-          }
-          println!();
+          self.print_hotkey(&i, hotkey);
+          self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
+        }
+        Item::InputText {
+          name, hotkey, exp, ..
+        } => {
+          self.print_hotkey(&i, hotkey);
+          self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
       }
     }
+  }
+  fn print_bottom(&self, is_sub: bool) {
     print!(
       "{}{}{}{}{}{}{}{}{}{}",
       "(".dark_grey(),
@@ -270,12 +256,10 @@ impl Menu {
       }
     }
     println!();
-  }
-  fn print_bottom(&self) {
     println!(
       "{}",
       "Press an index number or a hotkey to select:".dark_grey()
-    )
+    );
   }
   fn poll_read(&self) -> KeyCode {
     loop {
@@ -306,18 +290,18 @@ impl Menu {
     if *key == None {
       return Err("No Selection".to_string());
     } else if is_sub && *key == Some("Back".to_string()) {
-      self.flush_stdout(stdout_ins, is_sub);
+      self.flush_stdout(stdout_ins);
       return Err("Back".to_string());
     } else if *key == Some("Exit".to_string()) {
       if self.esc {
-        self.flush_stdout(stdout_ins, is_sub);
+        self.flush_stdout(stdout_ins);
         stdout_ins.flush().unwrap();
         return Err("Exit".to_string());
       }
     } else if *key == Some("Up".to_string()) {
       if *hover > 0 {
         *hover -= 1;
-        self.flush_stdout(stdout_ins, is_sub);
+        self.flush_stdout(stdout_ins);
         if path.len() == 1 {
           return self.printer(stdout_ins, hover);
         } else {
@@ -327,7 +311,7 @@ impl Menu {
     } else if *key == Some("Down".to_string()) {
       if (*hover + 1) < self.items.len() {
         *hover += 1;
-        self.flush_stdout(stdout_ins, is_sub);
+        self.flush_stdout(stdout_ins);
         if path.len() == 1 {
           return self.printer(stdout_ins, hover);
         } else {
@@ -342,12 +326,13 @@ impl Menu {
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
-            self.flush_stdout(stdout_ins, is_sub);
+            self.flush_stdout(stdout_ins);
             stdout_ins.flush().unwrap();
             path.push(name.to_string());
             return Ok(Selection {
               name: name.to_string(),
               path: path.to_vec(),
+              value: None,
             });
           } else {
             continue;
@@ -363,7 +348,7 @@ impl Menu {
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
-            self.flush_stdout(stdout_ins, is_sub);
+            self.flush_stdout(stdout_ins);
             path.push(name.to_string());
             let sub_menu = Menu {
               name: name.to_string(),
@@ -388,20 +373,87 @@ impl Menu {
             continue;
           }
         }
+        Item::InputText {
+          name,
+          hotkey,
+          exp,
+          default,
+        } => {
+          if (*key == hotkey.map(|f| f.to_string()))
+            || (*key == Some(i.to_string()))
+            || (*key == Some("Enter".to_string()) && i == *hover)
+          {
+            // (done): flush
+            self.flush_stdout(stdout_ins);
+            stdout_ins.flush().unwrap();
+            path.push(name.to_string());
+            // (done): read line
+            self.print_input(name, exp);
+            let input = self.read_line();
+            // (done): selection
+            return Ok(Selection {
+              name: name.to_string(),
+              path: path.to_vec(),
+              value: Some(input),
+            });
+          } else {
+            continue;
+          }
+        }
       };
     }
     Err("No Selection".to_string())
   }
-  fn flush_stdout(&self, stdout_ins: &mut Stdout, is_sub: bool) {
+  fn flush_stdout(&self, stdout_ins: &mut Stdout) {
     let mut rows = 3;
-    if !self.esc && !is_sub {
-      rows -= 1;
-    }
     stdout_ins
       .queue(cursor::MoveUp(self.items.len() as u16 + rows))
       .unwrap();
     stdout_ins
       .queue(terminal::Clear(ClearType::FromCursorDown))
       .unwrap();
+  }
+  fn print_hotkey(&self, index: &usize, hotkey: &Option<char>) {
+    print!("{}{}", index.to_string().yellow(), ".".dark_grey());
+    match hotkey {
+      Some(chr) => print!(
+        "{}{}{}",
+        "(".dark_grey(),
+        chr.to_string().to_uppercase().yellow(),
+        ")".dark_grey()
+      ),
+      None => print!("   "),
+    }
+  }
+  fn print_name_exp(
+    &self,
+    index: &usize,
+    hover: &mut usize,
+    offset: bool,
+    name: &String,
+    exp: &Option<String>,
+  ) {
+    let space;
+    if offset {
+      space = " ";
+    } else {
+      space = "  ";
+    }
+    if index == hover {
+      print!("{}{}", space, String::from(name).cyan());
+    } else {
+      print!("{}{}", space, name);
+    }
+    if let Some(exp_str) = exp {
+      print!(" {}", String::from(exp_str).dark_grey());
+    }
+    println!();
+  }
+  fn print_input(&self, name: &String, exp: &Option<String>) {}
+  fn read_line(&self) -> String {
+    let mut input = String::new();
+    stdin().read_line(&mut input).expect("read line");
+    input.truncate(input.len() - 2);
+    input
   }
 }
