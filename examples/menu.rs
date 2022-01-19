@@ -68,6 +68,16 @@ fn main() {
         hotkey: Some('f'),
         exp: Some("F64 Explanation.".to_string()),
       },
+      Item::I64 {
+        name: "I64".to_string(),
+        hotkey: Some('i'),
+        exp: Some("I64 Explanation.".to_string()),
+      },
+      Item::U64 {
+        name: "U64".to_string(),
+        hotkey: Some('u'),
+        exp: Some("U64 Explanation.".to_string()),
+      },
     ],
     exp: Some("My Main Menu Explanation.".to_string()),
     esc: true,
