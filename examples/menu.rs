@@ -18,7 +18,6 @@ fn main() {
         name: "InputText0".to_string(),
         hotkey: Some('i'),
         exp: Some("InputText0 Explanation.".to_string()),
-        default: Some("default text".to_string()),
       },
       Item::SubMenu {
         name: "Submenu0".to_string(),

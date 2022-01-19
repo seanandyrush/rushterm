@@ -97,8 +97,6 @@ pub enum Item {
     hotkey: Option<char>,
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
-    /// Default input value.
-    default: Option<String>,
   },
 }
 /// Starting point for creating a menu instance.
@@ -119,6 +117,7 @@ pub struct Selection {
   pub name: String,
   /// Vector containing direction of the selected item in the menu tree.
   pub path: Vec<String>,
+  /// Input by user, if it exists.
   pub value: Option<String>,
 }
 
@@ -373,24 +372,21 @@ impl Menu {
             continue;
           }
         }
-        Item::InputText {
-          name,
-          hotkey,
-          exp,
-          default,
-        } => {
+        Item::InputText { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
             // (done): flush
             self.flush_stdout(stdout_ins);
-            stdout_ins.flush().unwrap();
             path.push(name.to_string());
             // (done): read line
-            self.print_input(name, exp);
+            self.print_top(path);
+            self.print_item(name, exp);
             let input = self.read_line();
             // (done): selection
+            self.flush_stdout_input(stdout_ins);
+            stdout_ins.flush().unwrap();
             return Ok(Selection {
               name: name.to_string(),
               path: path.to_vec(),
@@ -405,13 +401,22 @@ impl Menu {
     Err("No Selection".to_string())
   }
   fn flush_stdout(&self, stdout_ins: &mut Stdout) {
-    let mut rows = 3;
+    let rows = 3;
     stdout_ins
       .queue(cursor::MoveUp(self.items.len() as u16 + rows))
-      .unwrap();
+      .expect("cursor move up");
     stdout_ins
       .queue(terminal::Clear(ClearType::FromCursorDown))
-      .unwrap();
+      .expect("terminal clear");
+  }
+  fn flush_stdout_input(&self, stdout_ins: &mut Stdout) {
+    let rows = 4;
+    stdout_ins
+      .queue(cursor::MoveUp(rows))
+      .expect("cursor move up");
+    stdout_ins
+      .queue(terminal::Clear(ClearType::FromCursorDown))
+      .expect("terminal clear");
   }
   fn print_hotkey(&self, index: &usize, hotkey: &Option<char>) {
     print!("{}{}", index.to_string().yellow(), ".".dark_grey());
@@ -449,7 +454,18 @@ impl Menu {
     }
     println!();
   }
-  fn print_input(&self, name: &String, exp: &Option<String>) {}
+  fn print_item(&self, name: &String, item_exp: &Option<String>) {
+    if let Some(item_exp) = item_exp {
+      println!(
+        "       {} {}",
+        String::from(name.to_owned() + "=").cyan(),
+        String::from(item_exp).dark_grey()
+      );
+    } else {
+      println!("       {} ", String::from(name.to_owned() + "=").cyan());
+    }
+    println!("{}", "Enter value:".dark_grey());
+  }
   fn read_line(&self) -> String {
     let mut input = String::new();
     stdin().read_line(&mut input).expect("read line");
