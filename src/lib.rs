@@ -102,11 +102,12 @@ use crossterm::{
   QueueableCommand,
 };
 use std::{
+  fmt,
   io::{stdin, stdout, Stdout, Write},
   str::FromStr,
 };
 /// Anything that can be listed in `Menu`.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Item {
   /// A menu item to execute an action. Exits `Menu`.
   Action {
@@ -182,6 +183,11 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
+}
+impl fmt::Display for Item {
+  fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+    write!(f, "{:?}", self)
+  }
 }
 /// Starting point for creating a menu instance.
 pub struct Menu {
@@ -532,7 +538,7 @@ impl Menu {
             path.push(name.to_string());
             // (done): print
             self.print_top(path);
-            self.print_name(name, exp);
+            self.print_name(item, name, exp);
             // (done): selection
             let mut attempt = 1;
             let input = self.read_line_string();
@@ -614,7 +620,7 @@ impl Menu {
       None => print!("   "),
     }
   }
-  fn print_name(&self, name: &String, item_exp: &Option<String>) {
+  fn print_name(&self, item: &Item, name: &String, item_exp: &Option<String>) {
     if let Some(item_exp) = item_exp {
       println!(
         "       {} {}",
@@ -627,7 +633,16 @@ impl Menu {
         String::from(name.to_owned() + "=").cyan().bold()
       );
     }
-    println!("{}", "Enter value:".dark_grey());
+    println!(
+      "{}{}{}",
+      "Enter a value of type (".dark_grey(),
+      self.struct_name(item.to_string()).blue(),
+      "):".dark_grey()
+    );
+  }
+  fn struct_name(&self, item: String) -> String {
+    let first = item.find("{").expect("struct name find first parenthesis");
+    item[0..first - 1].to_string()
   }
   fn print_name_exp(
     &self,
