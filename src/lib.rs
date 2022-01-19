@@ -544,7 +544,7 @@ impl Menu {
             let input = self.read_line_string();
             let selection = match item {
               Item::Char { .. } => {
-                let value: char = self.match_input(input, &mut attempt);
+                let value: char = self.match_input(item, input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
@@ -553,7 +553,7 @@ impl Menu {
                 }
               }
               Item::F64 { .. } => {
-                let value: f64 = self.match_input(input, &mut attempt);
+                let value: f64 = self.match_input(item, input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
@@ -562,7 +562,7 @@ impl Menu {
                 }
               }
               Item::I64 { .. } => {
-                let value: i64 = self.match_input(input, &mut attempt);
+                let value: i64 = self.match_input(item, input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
@@ -571,7 +571,7 @@ impl Menu {
                 }
               }
               Item::U64 { .. } => {
-                let value: u64 = self.match_input(input, &mut attempt);
+                let value: u64 = self.match_input(item, input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
@@ -586,7 +586,7 @@ impl Menu {
                 attempt: Some(attempt),
               },
             };
-            self.clear_lines(stdout_ins, (3 + attempt) as u16);
+            self.clear_lines(stdout_ins, (2 + (attempt * 2)) as u16);
             stdout_ins.flush().unwrap();
             return Ok(selection);
           } else {
@@ -673,13 +673,20 @@ impl Menu {
     stdin().read_line(&mut input).expect("read line");
     input.trim().to_string()
   }
-  fn match_input<T: FromStr>(&self, input: String, attempt: &mut i32) -> T {
+  fn match_input<T: FromStr>(&self, item: &Item, input: String, attempt: &mut i32) -> T {
     match input.parse() {
       Ok(ok) => ok,
       Err(_) => {
         *attempt += 1;
+        println!(
+          "{}{}{}{}",
+          "Invalid entry: ".dark_red(),
+          "Enter a value of type (".dark_grey(),
+          self.struct_name(item.to_string()).blue(),
+          "):".dark_grey()
+        );
         let input = self.read_line_string();
-        self.match_input(input, attempt)
+        self.match_input(item, input, attempt)
       }
     }
   }
