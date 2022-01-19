@@ -129,6 +129,15 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
+  /// A menu item to input `f64`. It can be distinguished by the `=` character after it.
+  F64 {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu {
@@ -244,7 +253,8 @@ impl Menu {
         }
         Item::Bool { name, hotkey, exp }
         | Item::Char { name, hotkey, exp }
-        | Item::String { name, hotkey, exp } => {
+        | Item::String { name, hotkey, exp }
+        | Item::F64 { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -458,7 +468,9 @@ impl Menu {
             continue;
           }
         }
-        Item::Char { name, hotkey, exp } | Item::String { name, hotkey, exp } => {
+        Item::Char { name, hotkey, exp }
+        | Item::String { name, hotkey, exp }
+        | Item::F64 { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
@@ -479,6 +491,14 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::Char(value)),
+                }
+              }
+              Item::F64 { .. } => {
+                let value: f64 = self.match_input(input);
+                Selection {
+                  name: name.to_string(),
+                  path: path.to_vec(),
+                  value: Some(Value::F64(value)),
                 }
               }
               _ => Selection {

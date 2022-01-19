@@ -63,6 +63,11 @@ fn main() {
         hotkey: Some('s'),
         exp: Some("String0 Explanation.".to_string()),
       },
+      Item::F64 {
+        name: "F64".to_string(),
+        hotkey: Some('f'),
+        exp: Some("F64 Explanation.".to_string()),
+      },
     ],
     exp: Some("My Main Menu Explanation.".to_string()),
     esc: true,
