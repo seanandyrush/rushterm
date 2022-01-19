@@ -65,7 +65,7 @@
 //!       },
 //!       Item::String {
 //!         name: "String0".to_string(),
-//!         hotkey: Some('s'),
+//!         hotkey: Some('t'),
 //!         exp: Some("String0 Explanation.".to_string()),
 //!       },
 //!       Item::F64 {
@@ -580,6 +580,8 @@ impl Menu {
                 attempt: Some(attempt),
               },
             };
+            self.clear_lines(stdout_ins, (3 + attempt) as u16);
+            stdout_ins.flush().unwrap();
             return Ok(selection);
           } else {
             continue;

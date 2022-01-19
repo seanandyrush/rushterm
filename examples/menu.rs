@@ -60,7 +60,7 @@ fn main() {
       },
       Item::String {
         name: "String0".to_string(),
-        hotkey: Some('s'),
+        hotkey: Some('t'),
         exp: Some("String0 Explanation.".to_string()),
       },
       Item::F64 {
