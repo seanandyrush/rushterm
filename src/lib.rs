@@ -99,7 +99,7 @@ pub enum Item {
     /// `SubMenu` items should be vector of `Item`s.
     items: Vec<Item>,
   },
-  /// A menu item to input boolean. It can be distinguished by the `=` character after it.
+  /// A menu item to input `bool`. It can be distinguished by the `=` character after it.
   Bool {
     /// Value name.
     name: String,
@@ -108,8 +108,8 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
-  /// A menu item to input text. It can be distinguished by the `=` character after it.
-  Input {
+  /// A menu item to input `String`. It can be distinguished by the `=` character after it.
+  String {
     /// Value name.
     name: String,
     /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
@@ -137,7 +137,16 @@ pub struct Selection {
   /// Vector containing direction of the selected item in the menu tree.
   pub path: Vec<String>,
   /// Input by user, if it exists.
-  pub value: Option<String>,
+  pub value: Option<Value>,
+}
+/// Input by user.
+#[derive(Debug, PartialEq)]
+pub enum Value {
+  Bool(bool),
+  Char(char),
+  String(String),
+  F64(f64),
+  U64(u64),
 }
 impl Menu {
   /// Prints out `Item`s, executes the `Menu` and returns `Result`.
@@ -221,11 +230,7 @@ impl Menu {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
         }
-        Item::Bool { name, hotkey, exp } => {
-          self.print_hotkey(&i, hotkey);
-          self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
-        }
-        Item::Input { name, hotkey, exp } => {
+        Item::Bool { name, hotkey, exp } | Item::String { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -421,7 +426,7 @@ impl Menu {
               Ok(mut ok) => {
                 return {
                   let last = ok.path.pop().expect("item bool path pop");
-                  ok.value = Some(last);
+                  ok.value = Some(Value::Bool(last.parse().expect("item bool value parse")));
                   Ok(ok)
                 }
               }
@@ -439,7 +444,7 @@ impl Menu {
             continue;
           }
         }
-        Item::Input { name, hotkey, exp } => {
+        Item::String { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
@@ -457,7 +462,7 @@ impl Menu {
             return Ok(Selection {
               name: name.to_string(),
               path: path.to_vec(),
-              value: Some(input),
+              value: Some(Value::String(input)),
             });
           } else {
             continue;

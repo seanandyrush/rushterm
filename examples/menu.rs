@@ -14,10 +14,10 @@ fn main() {
         hotkey: None,
         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
       },
-      Item::Input {
-        name: "Input0".to_string(),
+      Item::String {
+        name: "String0".to_string(),
         hotkey: Some('i'),
-        exp: Some("Input0 Explanation.".to_string()),
+        exp: Some("String0 Explanation.".to_string()),
       },
       Item::Bool {
         name: "Bool0".to_string(),
