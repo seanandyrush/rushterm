@@ -16,8 +16,13 @@ fn main() {
       },
       Item::InputText {
         name: "InputText0".to_string(),
-        hotkey: Some('i'),
+        hotkey: Some('t'),
         exp: Some("InputText0 Explanation.".to_string()),
+      },
+      Item::InputNum {
+        name: "InputNum0".to_string(),
+        hotkey: Some('n'),
+        exp: Some("InputNum0 Explanation.".to_string()),
       },
       Item::SubMenu {
         name: "Submenu0".to_string(),

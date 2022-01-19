@@ -98,6 +98,15 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
+  /// A menu item to enter number. It can be distinguished by the `=` character after it.
+  InputNum {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu {
@@ -118,7 +127,13 @@ pub struct Selection {
   /// Vector containing direction of the selected item in the menu tree.
   pub path: Vec<String>,
   /// Input by user, if it exists.
-  pub value: Option<String>,
+  pub value: Option<Value>,
+}
+/// Input by user.
+#[derive(Debug, PartialEq)]
+pub enum Value {
+  String(String),
+  Number(i64),
 }
 
 impl Menu {
@@ -203,9 +218,7 @@ impl Menu {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
         }
-        Item::InputText {
-          name, hotkey, exp, ..
-        } => {
+        Item::InputText { name, hotkey, exp } | Item::InputNum { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -382,15 +395,39 @@ impl Menu {
             path.push(name.to_string());
             // (done): read line
             self.print_top(path);
-            self.print_item(name, exp);
-            let input = self.read_line();
+            self.print_name(name, exp, "(Text)".to_string());
+            let input = self.read_line_string();
             // (done): selection
             self.flush_stdout_input(stdout_ins);
             stdout_ins.flush().unwrap();
             return Ok(Selection {
               name: name.to_string(),
               path: path.to_vec(),
-              value: Some(input),
+              value: Some(Value::String(input)),
+            });
+          } else {
+            continue;
+          }
+        }
+        Item::InputNum { name, hotkey, exp } => {
+          if (*key == hotkey.map(|f| f.to_string()))
+            || (*key == Some(i.to_string()))
+            || (*key == Some("Enter".to_string()) && i == *hover)
+          {
+            // (done): flush
+            self.flush_stdout(stdout_ins);
+            path.push(name.to_string());
+            // (done): read line
+            self.print_top(path);
+            self.print_name(name, exp, "(Number)".to_string());
+            // (done): selection
+            let input = self.read_line_number();
+            self.flush_stdout_input(stdout_ins);
+            stdout_ins.flush().unwrap();
+            return Ok(Selection {
+              name: name.to_string(),
+              path: path.to_vec(),
+              value: Some(Value::Number(input)),
             });
           } else {
             continue;
@@ -430,6 +467,18 @@ impl Menu {
       None => print!("   "),
     }
   }
+  fn print_name(&self, name: &String, item_exp: &Option<String>, kind: String) {
+    if let Some(item_exp) = item_exp {
+      println!(
+        "       {} {}",
+        String::from(name.to_owned() + "=").cyan(),
+        String::from(item_exp).dark_grey()
+      );
+    } else {
+      println!("       {} ", String::from(name.to_owned() + "=").cyan());
+    }
+    println!("{}{}", kind.dark_grey(), " Enter value:".dark_grey());
+  }
   fn print_name_exp(
     &self,
     index: &usize,
@@ -454,22 +503,16 @@ impl Menu {
     }
     println!();
   }
-  fn print_item(&self, name: &String, item_exp: &Option<String>) {
-    if let Some(item_exp) = item_exp {
-      println!(
-        "       {} {}",
-        String::from(name.to_owned() + "=").cyan(),
-        String::from(item_exp).dark_grey()
-      );
-    } else {
-      println!("       {} ", String::from(name.to_owned() + "=").cyan());
-    }
-    println!("{}", "Enter value:".dark_grey());
-  }
-  fn read_line(&self) -> String {
+  fn read_line_string(&self) -> String {
     let mut input = String::new();
     stdin().read_line(&mut input).expect("read line");
-    input.truncate(input.len() - 2);
-    input
+    input.trim().to_string()
+  }
+  fn read_line_number(&self) -> i64 {
+    let string = self.read_line_string();
+    match string.parse() {
+      Ok(ok) => ok,
+      Err(_) => self.read_line_number(),
+    }
   }
 }
