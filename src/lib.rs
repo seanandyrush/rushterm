@@ -19,15 +19,25 @@
 //!         hotkey: None,
 //!         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
 //!       },
+//!       Item::Input {
+//!         name: "Input0".to_string(),
+//!         hotkey: Some('i'),
+//!         exp: Some("Input0 Explanation.".to_string()),
+//!       },
 //!       Item::SubMenu {
 //!         name: "Submenu0".to_string(),
 //!         hotkey: Some('s'),
 //!         exp: Some("Submenu0 explanation.".to_string()),
 //!         items: vec![
 //!           Item::Action {
-//!             name: "Sub0 Action0".to_string(),
+//!             name: "Sub Action0".to_string(),
 //!             hotkey: Some('a'),
 //!             exp: Some("Sub Action0 Explanation. This Has Been Assigned To A Hotkey.".to_string()),
+//!           },
+//!           Item::Action {
+//!             name: "Sub Action1".to_string(),
+//!             hotkey: Some('c'),
+//!             exp: Some("Sub Action1 Explanation. This Has Been Assigned To A Hotkey.".to_string()),
 //!           },
 //!           Item::SubMenu {
 //!             name: "Deepermenu0".to_string(),
@@ -90,16 +100,7 @@ pub enum Item {
     items: Vec<Item>,
   },
   /// A menu item to enter text. It can be distinguished by the `=` character after it.
-  InputText {
-    /// Value name.
-    name: String,
-    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
-    hotkey: Option<char>,
-    /// Optional explanation in gray color is displayed next to the item.
-    exp: Option<String>,
-  },
-  /// A menu item to enter number. It can be distinguished by the `=` character after it.
-  InputNum {
+  Input {
     /// Value name.
     name: String,
     /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
@@ -127,15 +128,8 @@ pub struct Selection {
   /// Vector containing direction of the selected item in the menu tree.
   pub path: Vec<String>,
   /// Input by user, if it exists.
-  pub value: Option<Value>,
+  pub value: Option<String>,
 }
-/// Input by user.
-#[derive(Debug, PartialEq)]
-pub enum Value {
-  String(String),
-  Number(i64),
-}
-
 impl Menu {
   /// Prints out `Item`s, executes the `Menu` and returns `Result`.
   pub fn run(&self) -> Result<Selection, String> {
@@ -218,7 +212,7 @@ impl Menu {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
         }
-        Item::InputText { name, hotkey, exp } | Item::InputNum { name, hotkey, exp } => {
+        Item::Input { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -385,7 +379,7 @@ impl Menu {
             continue;
           }
         }
-        Item::InputText { name, hotkey, exp } => {
+        Item::Input { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
@@ -395,7 +389,7 @@ impl Menu {
             path.push(name.to_string());
             // (done): read line
             self.print_top(path);
-            self.print_name(name, exp, "(Text)".to_string());
+            self.print_name(name, exp);
             let input = self.read_line_string();
             // (done): selection
             self.flush_stdout_input(stdout_ins);
@@ -403,31 +397,7 @@ impl Menu {
             return Ok(Selection {
               name: name.to_string(),
               path: path.to_vec(),
-              value: Some(Value::String(input)),
-            });
-          } else {
-            continue;
-          }
-        }
-        Item::InputNum { name, hotkey, exp } => {
-          if (*key == hotkey.map(|f| f.to_string()))
-            || (*key == Some(i.to_string()))
-            || (*key == Some("Enter".to_string()) && i == *hover)
-          {
-            // (done): flush
-            self.flush_stdout(stdout_ins);
-            path.push(name.to_string());
-            // (done): read line
-            self.print_top(path);
-            self.print_name(name, exp, "(Number)".to_string());
-            // (done): selection
-            let input = self.read_line_number();
-            self.flush_stdout_input(stdout_ins);
-            stdout_ins.flush().unwrap();
-            return Ok(Selection {
-              name: name.to_string(),
-              path: path.to_vec(),
-              value: Some(Value::Number(input)),
+              value: Some(input),
             });
           } else {
             continue;
@@ -467,7 +437,7 @@ impl Menu {
       None => print!("   "),
     }
   }
-  fn print_name(&self, name: &String, item_exp: &Option<String>, kind: String) {
+  fn print_name(&self, name: &String, item_exp: &Option<String>) {
     if let Some(item_exp) = item_exp {
       println!(
         "       {} {}",
@@ -477,7 +447,7 @@ impl Menu {
     } else {
       println!("       {} ", String::from(name.to_owned() + "=").cyan());
     }
-    println!("{}{}", kind.dark_grey(), " Enter value:".dark_grey());
+    println!("{}", "Enter value:".dark_grey());
   }
   fn print_name_exp(
     &self,
@@ -507,12 +477,5 @@ impl Menu {
     let mut input = String::new();
     stdin().read_line(&mut input).expect("read line");
     input.trim().to_string()
-  }
-  fn read_line_number(&self) -> i64 {
-    let string = self.read_line_string();
-    match string.parse() {
-      Ok(ok) => ok,
-      Err(_) => self.read_line_number(),
-    }
   }
 }

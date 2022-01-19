@@ -14,15 +14,10 @@ fn main() {
         hotkey: None,
         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
       },
-      Item::InputText {
-        name: "InputText0".to_string(),
-        hotkey: Some('t'),
-        exp: Some("InputText0 Explanation.".to_string()),
-      },
-      Item::InputNum {
-        name: "InputNum0".to_string(),
-        hotkey: Some('n'),
-        exp: Some("InputNum0 Explanation.".to_string()),
+      Item::Input {
+        name: "Input0".to_string(),
+        hotkey: Some('i'),
+        exp: Some("Input0 Explanation.".to_string()),
       },
       Item::SubMenu {
         name: "Submenu0".to_string(),
@@ -60,7 +55,7 @@ fn main() {
       },
     ],
     exp: Some("My Main Menu Explanation.".to_string()),
-    esc: false,
+    esc: true,
   };
   let selection = menu.run();
   dbg!(&selection);
