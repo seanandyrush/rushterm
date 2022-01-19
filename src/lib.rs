@@ -203,6 +203,8 @@ pub struct Selection {
   pub path: Vec<String>,
   /// Input by user, if it exists.
   pub value: Option<Value>,
+  /// Number of attempts of input.
+  pub attempt: Option<i32>,
 }
 /// Input by user.
 #[derive(Debug, PartialEq)]
@@ -428,6 +430,7 @@ impl Menu {
               name: name.to_string(),
               path: path.to_vec(),
               value: None,
+              attempt: None,
             });
           } else {
             continue;
@@ -527,49 +530,54 @@ impl Menu {
             // (done): flush
             self.flush_stdout(stdout_ins);
             path.push(name.to_string());
-            // (done): read line
+            // (done): print
             self.print_top(path);
             self.print_name(name, exp);
             // (done): selection
+            let mut attempt = 1;
             let input = self.read_line_string();
-            // (done): match input
             let selection = match item {
               Item::Char { .. } => {
-                let value: char = self.match_input(input);
+                let value: char = self.match_input(input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::Char(value)),
+                  attempt: Some(attempt),
                 }
               }
               Item::F64 { .. } => {
-                let value: f64 = self.match_input(input);
+                let value: f64 = self.match_input(input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::F64(value)),
+                  attempt: Some(attempt),
                 }
               }
               Item::I64 { .. } => {
-                let value: i64 = self.match_input(input);
+                let value: i64 = self.match_input(input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::I64(value)),
+                  attempt: Some(attempt),
                 }
               }
               Item::U64 { .. } => {
-                let value: u64 = self.match_input(input);
+                let value: u64 = self.match_input(input, &mut attempt);
                 Selection {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::U64(value)),
+                  attempt: Some(attempt),
                 }
               }
               _ => Selection {
                 name: name.to_string(),
                 path: path.to_vec(),
                 value: Some(Value::String(input)),
+                attempt: Some(attempt),
               },
             };
             return Ok(selection);
@@ -581,14 +589,16 @@ impl Menu {
     }
     Err("No Selection".to_string())
   }
-  fn flush_stdout(&self, stdout_ins: &mut Stdout) {
-    let rows = 3;
+  fn clear_lines(&self, stdout_ins: &mut Stdout, lines: u16) {
     stdout_ins
-      .queue(cursor::MoveUp(self.items.len() as u16 + rows))
+      .queue(cursor::MoveUp(lines))
       .expect("cursor move up");
     stdout_ins
       .queue(terminal::Clear(ClearType::FromCursorDown))
       .expect("terminal clear");
+  }
+  fn flush_stdout(&self, stdout_ins: &mut Stdout) {
+    self.clear_lines(stdout_ins, (self.items.len() + 3) as u16);
   }
   fn print_hotkey(&self, index: &usize, hotkey: &Option<char>) {
     print!("{}{}", index.to_string().yellow(), ".".dark_grey());
@@ -646,12 +656,13 @@ impl Menu {
     stdin().read_line(&mut input).expect("read line");
     input.trim().to_string()
   }
-  fn match_input<T: FromStr>(&self, input: String) -> T {
+  fn match_input<T: FromStr>(&self, input: String, attempt: &mut i32) -> T {
     match input.parse() {
       Ok(ok) => ok,
       Err(_) => {
+        *attempt += 1;
         let input = self.read_line_string();
-        self.match_input(input)
+        self.match_input(input, attempt)
       }
     }
   }
