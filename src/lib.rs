@@ -606,11 +606,14 @@ impl Menu {
     if let Some(item_exp) = item_exp {
       println!(
         "       {} {}",
-        String::from(name.to_owned() + "=").cyan(),
+        String::from(name.to_owned() + "=").cyan().bold(),
         String::from(item_exp).dark_grey()
       );
     } else {
-      println!("       {} ", String::from(name.to_owned() + "=").cyan());
+      println!(
+        "       {} ",
+        String::from(name.to_owned() + "=").cyan().bold()
+      );
     }
     println!("{}", "Enter value:".dark_grey());
   }
@@ -629,7 +632,7 @@ impl Menu {
       space = "  ";
     }
     if index == hover {
-      print!("{}{}", space, String::from(name).cyan());
+      print!("{}{}", space, String::from(name).cyan().bold());
     } else {
       print!("{}{}", space, name);
     }
