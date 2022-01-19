@@ -4,7 +4,7 @@
 //! Firstly, we'll need to construct a `Menu` instance with its `Item`s. Bring them into scope. `Menu` instance doesn't need to be mutable. Next, we'll invoke `.run()` method on the instance to execute our menu:
 //! ```rust
 //! use rushterm::{Item, Menu};
-
+//!
 //! fn main() {
 //!   let menu = Menu {
 //!     name: "My Main Menu".to_string(),
@@ -18,11 +18,6 @@
 //!         name: "Action1".to_string(),
 //!         hotkey: None,
 //!         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
-//!       },
-//!       Item::Input {
-//!         name: "Input0".to_string(),
-//!         hotkey: Some('i'),
-//!         exp: Some("Input0 Explanation.".to_string()),
 //!       },
 //!       Item::SubMenu {
 //!         name: "Submenu0".to_string(),
@@ -58,6 +53,36 @@
 //!           },
 //!         ],
 //!       },
+//!       Item::Bool {
+//!         name: "Bool0".to_string(),
+//!         hotkey: Some('b'),
+//!         exp: Some("Bool0 Explanation.".to_string()),
+//!       },
+//!       Item::Char {
+//!         name: "Char0".to_string(),
+//!         hotkey: Some('c'),
+//!         exp: Some("Char0 Explanation.".to_string()),
+//!       },
+//!       Item::String {
+//!         name: "String0".to_string(),
+//!         hotkey: Some('s'),
+//!         exp: Some("String0 Explanation.".to_string()),
+//!       },
+//!       Item::F64 {
+//!         name: "F64".to_string(),
+//!         hotkey: Some('f'),
+//!         exp: Some("F64 Explanation.".to_string()),
+//!       },
+//!       Item::I64 {
+//!         name: "I64".to_string(),
+//!         hotkey: Some('i'),
+//!         exp: Some("I64 Explanation.".to_string()),
+//!       },
+//!       Item::U64 {
+//!         name: "U64".to_string(),
+//!         hotkey: Some('u'),
+//!         exp: Some("U64 Explanation.".to_string()),
+//!       },
 //!     ],
 //!     exp: Some("My Main Menu Explanation.".to_string()),
 //!     esc: true,
@@ -65,6 +90,7 @@
 //!   let selection = menu.run();
 //!   dbg!(&selection);
 //! }
+//!
 //! ```
 //! If selection is successful, `run()` method will return us `Selection` type in `Ok()` variant to get information we may need in ongoing execution. If not, exits the execution with an `Err()` variant.
 
@@ -138,6 +164,24 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
+  /// A menu item to input `i64`. It can be distinguished by the `=` character after it.
+  I64 {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
+  /// A menu item to input `u64`. It can be distinguished by the `=` character after it.
+  U64 {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
 }
 /// Starting point for creating a menu instance.
 pub struct Menu {
@@ -167,6 +211,7 @@ pub enum Value {
   Char(char),
   String(String),
   F64(f64),
+  I64(i64),
   U64(u64),
 }
 impl Menu {
@@ -254,7 +299,9 @@ impl Menu {
         Item::Bool { name, hotkey, exp }
         | Item::Char { name, hotkey, exp }
         | Item::String { name, hotkey, exp }
-        | Item::F64 { name, hotkey, exp } => {
+        | Item::F64 { name, hotkey, exp }
+        | Item::I64 { name, hotkey, exp }
+        | Item::U64 { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -470,7 +517,9 @@ impl Menu {
         }
         Item::Char { name, hotkey, exp }
         | Item::String { name, hotkey, exp }
-        | Item::F64 { name, hotkey, exp } => {
+        | Item::F64 { name, hotkey, exp }
+        | Item::I64 { name, hotkey, exp }
+        | Item::U64 { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
@@ -499,6 +548,22 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::F64(value)),
+                }
+              }
+              Item::I64 { .. } => {
+                let value: i64 = self.match_input(input);
+                Selection {
+                  name: name.to_string(),
+                  path: path.to_vec(),
+                  value: Some(Value::I64(value)),
+                }
+              }
+              Item::U64 { .. } => {
+                let value: u64 = self.match_input(input);
+                Selection {
+                  name: name.to_string(),
+                  path: path.to_vec(),
+                  value: Some(Value::U64(value)),
                 }
               }
               _ => Selection {
