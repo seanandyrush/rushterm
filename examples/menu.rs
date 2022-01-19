@@ -19,6 +19,11 @@ fn main() {
         hotkey: Some('i'),
         exp: Some("Input0 Explanation.".to_string()),
       },
+      Item::Bool {
+        name: "Bool0".to_string(),
+        hotkey: Some('b'),
+        exp: Some("Bool0 Explanation.".to_string()),
+      },
       Item::SubMenu {
         name: "Submenu0".to_string(),
         hotkey: Some('s'),

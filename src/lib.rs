@@ -99,7 +99,16 @@ pub enum Item {
     /// `SubMenu` items should be vector of `Item`s.
     items: Vec<Item>,
   },
-  /// A menu item to enter text. It can be distinguished by the `=` character after it.
+  /// A menu item to input boolean. It can be distinguished by the `=` character after it.
+  Bool {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
+  /// A menu item to input text. It can be distinguished by the `=` character after it.
   Input {
     /// Value name.
     name: String,
@@ -211,6 +220,10 @@ impl Menu {
         } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
+        }
+        Item::Bool { name, hotkey, exp } => {
+          self.print_hotkey(&i, hotkey);
+          self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
         Item::Input { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
@@ -365,6 +378,53 @@ impl Menu {
             let sub_result = sub_menu.run_sub(path);
             match sub_result {
               Ok(ok) => return Ok(ok),
+              Err(err) if &err == "Back" => {
+                path.pop();
+                if path.len() == 1 {
+                  return self.run();
+                } else {
+                  return self.run_sub(path);
+                }
+              }
+              Err(err) => return Err(err),
+            }
+          } else {
+            continue;
+          }
+        }
+        Item::Bool { name, hotkey, exp } => {
+          if (*key == hotkey.map(|f| f.to_string()))
+            || (*key == Some(i.to_string()))
+            || (*key == Some("Enter".to_string()) && i == *hover)
+          {
+            self.flush_stdout(stdout_ins);
+            path.push(name.to_string());
+            let sub_menu = Menu {
+              name: name.to_string(),
+              items: vec![
+                Item::Action {
+                  name: "true".to_string(),
+                  exp: None,
+                  hotkey: Some('t'),
+                },
+                Item::Action {
+                  name: "false".to_string(),
+                  exp: None,
+                  hotkey: Some('f'),
+                },
+              ],
+              exp: exp.as_ref().map(|f| String::from(f)),
+              esc: self.esc,
+            };
+            let sub_result = sub_menu.run_sub(path);
+            match sub_result {
+              Ok(mut ok) => {
+                return {
+                  let last = ok.path.pop().expect("item bool path pop");
+                  ok.value = Some(last);
+                  Ok(ok)
+                }
+              }
               Err(err) if &err == "Back" => {
                 path.pop();
                 if path.len() == 1 {
