@@ -387,18 +387,18 @@ impl Menu {
     if *key == None {
       return Err("No Selection".to_string());
     } else if is_sub && *key == Some("Back".to_string()) {
-      self.flush_stdout(stdout_ins);
+      self.clear_menu(stdout_ins);
       return Err("Back".to_string());
     } else if *key == Some("Exit".to_string()) {
       if self.esc {
-        self.flush_stdout(stdout_ins);
+        self.clear_menu(stdout_ins);
         stdout_ins.flush().unwrap();
         return Err("Exit".to_string());
       }
     } else if *key == Some("Up".to_string()) {
       if *hover > 0 {
         *hover -= 1;
-        self.flush_stdout(stdout_ins);
+        self.clear_menu(stdout_ins);
         if path.len() == 1 {
           return self.printer(stdout_ins, hover);
         } else {
@@ -408,7 +408,7 @@ impl Menu {
     } else if *key == Some("Down".to_string()) {
       if (*hover + 1) < self.items.len() {
         *hover += 1;
-        self.flush_stdout(stdout_ins);
+        self.clear_menu(stdout_ins);
         if path.len() == 1 {
           return self.printer(stdout_ins, hover);
         } else {
@@ -423,7 +423,7 @@ impl Menu {
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
-            self.flush_stdout(stdout_ins);
+            self.clear_menu(stdout_ins);
             stdout_ins.flush().unwrap();
             path.push(name.to_string());
             return Ok(Selection {
@@ -446,7 +446,7 @@ impl Menu {
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
-            self.flush_stdout(stdout_ins);
+            self.clear_menu(stdout_ins);
             path.push(name.to_string());
             let sub_menu = Menu {
               name: name.to_string(),
@@ -476,7 +476,7 @@ impl Menu {
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
-            self.flush_stdout(stdout_ins);
+            self.clear_menu(stdout_ins);
             path.push(name.to_string());
             let sub_menu = Menu {
               name: name.to_string(),
@@ -528,7 +528,7 @@ impl Menu {
             || (*key == Some("Enter".to_string()) && i == *hover)
           {
             // (done): flush
-            self.flush_stdout(stdout_ins);
+            self.clear_menu(stdout_ins);
             path.push(name.to_string());
             // (done): print
             self.print_top(path);
@@ -597,7 +597,7 @@ impl Menu {
       .queue(terminal::Clear(ClearType::FromCursorDown))
       .expect("terminal clear");
   }
-  fn flush_stdout(&self, stdout_ins: &mut Stdout) {
+  fn clear_menu(&self, stdout_ins: &mut Stdout) {
     self.clear_lines(stdout_ins, (self.items.len() + 3) as u16);
   }
   fn print_hotkey(&self, index: &usize, hotkey: &Option<char>) {
