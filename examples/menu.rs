@@ -14,16 +14,6 @@ fn main() {
         hotkey: None,
         exp: Some("Action1 Explanation. This Has No Hotkey.".to_string()),
       },
-      Item::String {
-        name: "String0".to_string(),
-        hotkey: Some('i'),
-        exp: Some("String0 Explanation.".to_string()),
-      },
-      Item::Bool {
-        name: "Bool0".to_string(),
-        hotkey: Some('b'),
-        exp: Some("Bool0 Explanation.".to_string()),
-      },
       Item::SubMenu {
         name: "Submenu0".to_string(),
         hotkey: Some('s'),
@@ -57,6 +47,21 @@ fn main() {
             ],
           },
         ],
+      },
+      Item::Bool {
+        name: "Bool0".to_string(),
+        hotkey: Some('b'),
+        exp: Some("Bool0 Explanation.".to_string()),
+      },
+      Item::Char {
+        name: "Char0".to_string(),
+        hotkey: Some('c'),
+        exp: Some("Char0 Explanation.".to_string()),
+      },
+      Item::String {
+        name: "String0".to_string(),
+        hotkey: Some('s'),
+        exp: Some("String0 Explanation.".to_string()),
       },
     ],
     exp: Some("My Main Menu Explanation.".to_string()),

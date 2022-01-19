@@ -75,7 +75,10 @@ use crossterm::{
   terminal::{self, ClearType},
   QueueableCommand,
 };
-use std::io::{stdin, stdout, Stdout, Write};
+use std::{
+  io::{stdin, stdout, Stdout, Write},
+  str::FromStr,
+};
 /// Anything that can be listed in `Menu`.
 #[derive(Clone)]
 pub enum Item {
@@ -101,6 +104,15 @@ pub enum Item {
   },
   /// A menu item to input `bool`. It can be distinguished by the `=` character after it.
   Bool {
+    /// Value name.
+    name: String,
+    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
+    hotkey: Option<char>,
+    /// Optional explanation in gray color is displayed next to the item.
+    exp: Option<String>,
+  },
+  /// A menu item to input `String`. It can be distinguished by the `=` character after it.
+  Char {
     /// Value name.
     name: String,
     /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
@@ -230,7 +242,9 @@ impl Menu {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
         }
-        Item::Bool { name, hotkey, exp } | Item::String { name, hotkey, exp } => {
+        Item::Bool { name, hotkey, exp }
+        | Item::Char { name, hotkey, exp }
+        | Item::String { name, hotkey, exp } => {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, false, &(name.to_owned() + "="), exp);
         }
@@ -444,7 +458,7 @@ impl Menu {
             continue;
           }
         }
-        Item::String { name, hotkey, exp } => {
+        Item::Char { name, hotkey, exp } | Item::String { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
             || (*key == Some("Enter".to_string()) && i == *hover)
@@ -455,15 +469,25 @@ impl Menu {
             // (done): read line
             self.print_top(path);
             self.print_name(name, exp);
-            let input = self.read_line_string();
             // (done): selection
-            self.flush_stdout_input(stdout_ins);
-            stdout_ins.flush().unwrap();
-            return Ok(Selection {
-              name: name.to_string(),
-              path: path.to_vec(),
-              value: Some(Value::String(input)),
-            });
+            let input = self.read_line_string();
+            // (done): match input
+            let selection = match item {
+              Item::Char { .. } => {
+                let value: char = self.match_input(input);
+                Selection {
+                  name: name.to_string(),
+                  path: path.to_vec(),
+                  value: Some(Value::Char(value)),
+                }
+              }
+              _ => Selection {
+                name: name.to_string(),
+                path: path.to_vec(),
+                value: Some(Value::String(input)),
+              },
+            };
+            return Ok(selection);
           } else {
             continue;
           }
@@ -476,15 +500,6 @@ impl Menu {
     let rows = 3;
     stdout_ins
       .queue(cursor::MoveUp(self.items.len() as u16 + rows))
-      .expect("cursor move up");
-    stdout_ins
-      .queue(terminal::Clear(ClearType::FromCursorDown))
-      .expect("terminal clear");
-  }
-  fn flush_stdout_input(&self, stdout_ins: &mut Stdout) {
-    let rows = 4;
-    stdout_ins
-      .queue(cursor::MoveUp(rows))
       .expect("cursor move up");
     stdout_ins
       .queue(terminal::Clear(ClearType::FromCursorDown))
@@ -542,5 +557,14 @@ impl Menu {
     let mut input = String::new();
     stdin().read_line(&mut input).expect("read line");
     input.trim().to_string()
+  }
+  fn match_input<T: FromStr>(&self, input: String) -> T {
+    match input.parse() {
+      Ok(ok) => ok,
+      Err(_) => {
+        let input = self.read_line_string();
+        self.match_input(input)
+      }
+    }
   }
 }
