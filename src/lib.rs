@@ -439,22 +439,26 @@ impl Menu {
     } else if *key == Some("Up".to_string()) {
       if *hover > 0 {
         *hover -= 1;
-        self.clear_menu(stdout_ins);
-        if path.len() == 1 {
-          return self.printer(stdout_ins, hover);
-        } else {
-          return self.printer_sub(path, stdout_ins, hover);
-        }
+      } else {
+        *hover = self.items.len() - 1;
+      }
+      self.clear_menu(stdout_ins);
+      if path.len() == 1 {
+        return self.printer(stdout_ins, hover);
+      } else {
+        return self.printer_sub(path, stdout_ins, hover);
       }
     } else if *key == Some("Down".to_string()) {
       if (*hover + 1) < self.items.len() {
         *hover += 1;
-        self.clear_menu(stdout_ins);
-        if path.len() == 1 {
-          return self.printer(stdout_ins, hover);
-        } else {
-          return self.printer_sub(path, stdout_ins, hover);
-        }
+      } else {
+        *hover = 0;
+      }
+      self.clear_menu(stdout_ins);
+      if path.len() == 1 {
+        return self.printer(stdout_ins, hover);
+      } else {
+        return self.printer_sub(path, stdout_ins, hover);
       }
     }
     for (i, item) in self.items.iter().enumerate() {
