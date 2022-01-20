@@ -398,9 +398,11 @@ impl Menu {
     match keycode {
       KeyCode::Up => Some(String::from("Up")),
       KeyCode::Down => Some(String::from("Down")),
-      KeyCode::Enter | KeyCode::Right => Some(String::from("Enter")),
+      KeyCode::Left => Some(String::from("Left")),
+      KeyCode::Right => Some(String::from("Right")),
+      KeyCode::Enter => Some(String::from("Enter")),
       KeyCode::Esc => Some(String::from("Exit")),
-      KeyCode::Backspace | KeyCode::Left => Some(String::from("Back")),
+      KeyCode::Backspace => Some(String::from("Back")),
       KeyCode::Char(chr) => Some(chr.to_string().to_lowercase()),
       _ => None,
     }
@@ -415,7 +417,7 @@ impl Menu {
   ) -> Result<Selection, String> {
     if *key == None {
       return Err("No Selection".to_string());
-    } else if is_sub && *key == Some("Back".to_string()) {
+    } else if is_sub && (*key == Some("Back".to_string()) || *key == Some("Left".to_string())) {
       self.clear_menu(stdout_ins);
       return Err("Back".to_string());
     } else if *key == Some("Exit".to_string()) {
@@ -473,7 +475,8 @@ impl Menu {
         } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
-            || (*key == Some("Enter".to_string()) && i == *hover)
+            || ((*key == Some("Enter".to_string()) || *key == Some("Right".to_string()))
+              && i == *hover)
           {
             self.clear_menu(stdout_ins);
             path.push(name.to_string());
@@ -503,7 +506,8 @@ impl Menu {
         Item::Bool { name, hotkey, exp } => {
           if (*key == hotkey.map(|f| f.to_string()))
             || (*key == Some(i.to_string()))
-            || (*key == Some("Enter".to_string()) && i == *hover)
+            || ((*key == Some("Enter".to_string()) || *key == Some("Right".to_string()))
+              && i == *hover)
           {
             self.clear_menu(stdout_ins);
             path.push(name.to_string());
