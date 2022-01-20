@@ -209,6 +209,8 @@ pub struct Selection {
   pub path: Vec<String>,
   /// Input by user, if it exists.
   pub value: Option<Value>,
+  /// Length of value.
+  pub len: Option<usize>,
   /// Number of attempts of input.
   pub attempt: Option<i32>,
 }
@@ -481,6 +483,7 @@ impl Menu {
               name: name.to_string(),
               path: path.to_vec(),
               value: None,
+              len: None,
               attempt: None,
             });
           } else {
@@ -594,6 +597,7 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::Char(value)),
+                  len: Some(1),
                   attempt: Some(attempt),
                 }
               }
@@ -603,6 +607,7 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::F64(value)),
+                  len: Some(value.to_string().len()),
                   attempt: Some(attempt),
                 }
               }
@@ -612,6 +617,7 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::I64(value)),
+                  len: Some(value.to_string().len()),
                   attempt: Some(attempt),
                 }
               }
@@ -621,13 +627,15 @@ impl Menu {
                   name: name.to_string(),
                   path: path.to_vec(),
                   value: Some(Value::U64(value)),
+                  len: Some(value.to_string().len()),
                   attempt: Some(attempt),
                 }
               }
               _ => Selection {
                 name: name.to_string(),
                 path: path.to_vec(),
-                value: Some(Value::String(input)),
+                value: Some(Value::String(String::from(&input))),
+                len: Some(input.len()),
                 attempt: Some(attempt),
               },
             };
