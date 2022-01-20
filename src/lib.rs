@@ -232,7 +232,7 @@ impl Menu {
   fn printer(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
     self.print_top(&vec![self.name.to_string()]);
     self.print_items(hover);
-    self.print_bottom(false);
+    self.print_bottom(false, hover);
     self.matcher(stdout_ins, hover)
   }
   fn matcher(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
@@ -264,7 +264,7 @@ impl Menu {
   ) -> Result<Selection, String> {
     self.print_top(path);
     self.print_items(hover);
-    self.print_bottom(true);
+    self.print_bottom(true, hover);
     self.matcher_sub(stdout_ins, path, hover)
   }
   fn matcher_sub(
@@ -304,8 +304,11 @@ impl Menu {
           self.print_hotkey(&i, hotkey);
           self.print_name_exp(&i, hover, true, &("+".to_owned() + name), exp);
         }
-        Item::Bool { name, hotkey, exp }
-        | Item::Char { name, hotkey, exp }
+        Item::Bool { name, hotkey, exp } => {
+          self.print_hotkey(&i, hotkey);
+          self.print_name_exp(&i, hover, true, &("+".to_owned() + name + "="), exp);
+        }
+        Item::Char { name, hotkey, exp }
         | Item::String { name, hotkey, exp }
         | Item::F64 { name, hotkey, exp }
         | Item::I64 { name, hotkey, exp }
@@ -316,9 +319,9 @@ impl Menu {
       }
     }
   }
-  fn print_bottom(&self, is_sub: bool) {
+  fn print_bottom(&self, is_sub: bool, hover: &mut usize) {
     print!(
-      "{}{}{}{}{}{}{}{}{}{}{}",
+      "{}{}{}{}{}{}{}",
       "(".dark_grey(),
       "Up".yellow(),
       ")".dark_grey(),
@@ -326,16 +329,35 @@ impl Menu {
       "Down".yellow(),
       ") ".dark_grey(),
       "Move",
-      ", (".dark_grey(),
-      "Enter".yellow(),
-      ") ".dark_grey(),
-      "Select",
     );
-    if is_sub {
+    if let Item::SubMenu { .. } | Item::Bool { .. } = self.items[*hover] {
+      print!(
+        "{}{}{}{}{}{}{}",
+        ", (".dark_grey(),
+        "Enter".yellow(),
+        ")".dark_grey(),
+        "(".dark_grey(),
+        "Right".yellow(),
+        ") ".dark_grey(),
+        "Select",
+      );
+    } else {
       print!(
         "{}{}{}{}",
         ", (".dark_grey(),
+        "Enter".yellow(),
+        ") ".dark_grey(),
+        "Select",
+      );
+    }
+    if is_sub {
+      print!(
+        "{}{}{}{}{}{}{}",
+        ", (".dark_grey(),
         "Backspace".yellow(),
+        ")".dark_grey(),
+        "(".dark_grey(),
+        "Left".yellow(),
         ") ".dark_grey(),
         "Back",
       );
