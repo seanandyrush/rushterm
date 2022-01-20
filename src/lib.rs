@@ -443,11 +443,14 @@ impl Menu {
         *hover = self.items.len() - 1;
       }
       self.clear_menu(stdout_ins);
+      self.print_top(path);
+      self.print_items(hover);
       if path.len() == 1 {
-        return self.printer(stdout_ins, hover);
+        self.print_bottom(false, hover);
       } else {
-        return self.printer_sub(path, stdout_ins, hover);
+        self.print_bottom(true, hover);
       }
+      return Err("No Selection".to_string());
     } else if *key == Some("Down".to_string()) {
       if (*hover + 1) < self.items.len() {
         *hover += 1;
@@ -455,11 +458,14 @@ impl Menu {
         *hover = 0;
       }
       self.clear_menu(stdout_ins);
+      self.print_top(path);
+      self.print_items(hover);
       if path.len() == 1 {
-        return self.printer(stdout_ins, hover);
+        self.print_bottom(false, hover);
       } else {
-        return self.printer_sub(path, stdout_ins, hover);
+        self.print_bottom(true, hover);
       }
+      return Err("No Selection".to_string());
     }
     for (i, item) in self.items.iter().enumerate() {
       match item {
@@ -545,11 +551,9 @@ impl Menu {
             let sub_result = sub_menu.run_sub(path);
             match sub_result {
               Ok(mut ok) => {
-                return {
-                  let last = ok.path.pop().expect("item bool path pop");
-                  ok.value = Some(Value::Bool(last.parse().expect("item bool value parse")));
-                  Ok(ok)
-                }
+                let last = ok.path.pop().expect("item bool path pop");
+                ok.value = Some(Value::Bool(last.parse().expect("item bool value parse")));
+                return Ok(ok);
               }
               Err(err) if &err == "Back" => {
                 path.pop();
