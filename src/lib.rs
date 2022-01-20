@@ -674,16 +674,18 @@ impl Menu {
         String::from(name.to_owned() + "=").cyan().bold()
       );
     }
-    println!(
-      "{}{}{}",
-      "Enter a value of type (".dark_grey(),
-      self.struct_name(item.to_string()).blue(),
-      "):".dark_grey()
-    );
+    self.print_input_bottom(item);
   }
-  fn struct_name(&self, item: String) -> String {
-    let first = item.find("{").expect("struct name find first parenthesis");
-    item[0..first - 1].to_string()
+  fn print_input_bottom(&self, item: &Item) {
+    // (done): slice
+    let string = item.to_string();
+    let first = string
+      .find("{")
+      .expect("struct name find first parenthesis");
+    let slice = string[0..first - 1].to_string();
+    // (done): print
+    print!("{}{}", "Enter a value. Type: ".dark_grey(), slice.blue());
+    println!();
   }
   fn print_name_exp(
     &self,
@@ -719,13 +721,8 @@ impl Menu {
       Ok(ok) => ok,
       Err(_) => {
         *attempt += 1;
-        println!(
-          "{}{}{}{}",
-          "Invalid entry: ".dark_red(),
-          "Enter a value of type (".dark_grey(),
-          self.struct_name(item.to_string()).blue(),
-          "):".dark_grey()
-        );
+        print!("{}", "Invalid entry: ".dark_red(),);
+        self.print_input_bottom(item);
         let input = self.read_line_string();
         self.match_input(item, input, attempt)
       }
