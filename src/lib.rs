@@ -318,13 +318,14 @@ impl Menu {
   }
   fn print_bottom(&self, is_sub: bool) {
     print!(
-      "{}{}{}{}{}{}{}{}{}{}",
+      "{}{}{}{}{}{}{}{}{}{}{}",
       "(".dark_grey(),
       "Up".yellow(),
       ")".dark_grey(),
-      ", (".dark_grey(),
+      "(".dark_grey(),
       "Down".yellow(),
-      ")".dark_grey(),
+      ") ".dark_grey(),
+      "Move",
       ", (".dark_grey(),
       "Enter".yellow(),
       ") ".dark_grey(),
@@ -375,9 +376,9 @@ impl Menu {
     match keycode {
       KeyCode::Up => Some(String::from("Up")),
       KeyCode::Down => Some(String::from("Down")),
-      KeyCode::Enter => Some(String::from("Enter")),
+      KeyCode::Enter | KeyCode::Right => Some(String::from("Enter")),
       KeyCode::Esc => Some(String::from("Exit")),
-      KeyCode::Backspace => Some(String::from("Back")),
+      KeyCode::Backspace | KeyCode::Left => Some(String::from("Back")),
       KeyCode::Char(chr) => Some(chr.to_string().to_lowercase()),
       _ => None,
     }
