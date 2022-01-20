@@ -229,6 +229,11 @@ impl Menu {
     let mut hover = 0 as usize;
     self.printer(&mut stdout_ins, &mut hover)
   }
+  fn rerun(&self, hover: usize) -> Result<Selection, String> {
+    let mut stdout_ins = stdout();
+    let mut hover = hover;
+    self.printer(&mut stdout_ins, &mut hover)
+  }
   fn printer(&self, stdout_ins: &mut Stdout, hover: &mut usize) -> Result<Selection, String> {
     self.print_top(&vec![self.name.to_string()]);
     self.print_items(hover);
@@ -254,6 +259,11 @@ impl Menu {
   fn run_sub(&self, path: &mut Vec<String>) -> Result<Selection, String> {
     let mut stdout_ins = stdout();
     let mut hover = 0 as usize;
+    self.printer_sub(path, &mut stdout_ins, &mut hover)
+  }
+  fn rerun_sub(&self, path: &mut Vec<String>, hover: usize) -> Result<Selection, String> {
+    let mut stdout_ins = stdout();
+    let mut hover = hover;
     self.printer_sub(path, &mut stdout_ins, &mut hover)
   }
   fn printer_sub(
@@ -492,9 +502,9 @@ impl Menu {
               Err(err) if &err == "Back" => {
                 path.pop();
                 if path.len() == 1 {
-                  return self.run();
+                  return self.rerun(*hover);
                 } else {
-                  return self.run_sub(path);
+                  return self.rerun_sub(path, *hover);
                 }
               }
               Err(err) => return Err(err),
@@ -540,9 +550,9 @@ impl Menu {
               Err(err) if &err == "Back" => {
                 path.pop();
                 if path.len() == 1 {
-                  return self.run();
+                  return self.rerun(*hover);
                 } else {
-                  return self.run_sub(path);
+                  return self.rerun_sub(path, *hover);
                 }
               }
               Err(err) => return Err(err),
