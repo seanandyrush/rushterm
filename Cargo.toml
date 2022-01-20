@@ -1,10 +1,10 @@
 [package]
 name = "rushterm"
-version = "0.6.1"
+version = "1.0.0"
 edition = "2021"
 description = "Make your CLI app easy by adding menu. Create nested menus, navigate with hotkeys. Data-driven. No function/macro complexity."
 license = "MIT OR Apache-2.0"
-documentation = "https://docs.rs/rushterm/0.6.1/rushterm/"
+documentation = "https://docs.rs/rushterm/1.0.0/rushterm/"
 homepage = "https://github.com/seanandyrush/rushterm"
 repository = "https://github.com/seanandyrush/rushterm"
 

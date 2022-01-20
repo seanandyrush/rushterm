@@ -156,17 +156,6 @@ pub enum Item {
     /// Optional explanation in gray color is displayed next to the item.
     exp: Option<String>,
   },
-  /// A menu item to input `String`, which can be with maximum character. It can be distinguished by the `=` character after it.
-  StringMax {
-    /// Value name.
-    name: String,
-    /// Assigning a hotkey to the item is optional. The hotkey is displayed in yellow.
-    hotkey: Option<char>,
-    /// Optional explanation in gray color is displayed next to the item.
-    exp: Option<String>,
-    /// Maximum `String` character.
-    max: usize,
-  },
   /// A menu item to input `f64`. It can be distinguished by the `=` character after it.
   F64 {
     /// Value name.
@@ -331,9 +320,6 @@ impl Menu {
         }
         Item::Char { name, hotkey, exp }
         | Item::String { name, hotkey, exp }
-        | Item::StringMax {
-          name, hotkey, exp, ..
-        }
         | Item::F64 { name, hotkey, exp }
         | Item::I64 { name, hotkey, exp }
         | Item::U64 { name, hotkey, exp } => {
@@ -581,9 +567,6 @@ impl Menu {
         }
         Item::Char { name, hotkey, exp }
         | Item::String { name, hotkey, exp }
-        | Item::StringMax {
-          name, hotkey, exp, ..
-        }
         | Item::F64 { name, hotkey, exp }
         | Item::I64 { name, hotkey, exp }
         | Item::U64 { name, hotkey, exp } => {
