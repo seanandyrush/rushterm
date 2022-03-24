@@ -9,9 +9,6 @@ link: https://www.paypal.com/donate/?hosted_button_id=AN536BKRLP8MG
 <img alt="" border="0" src="https://www.paypal.com/en_CO/i/scr/pixel.gif" width="1" height="1" />
 </form>
 
-![paypal](paypal_qr.png)
-
-
 Thank you!
 
 Sean Andy Rush.
